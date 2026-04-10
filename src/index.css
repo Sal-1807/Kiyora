@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base ─────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #f7f7f5;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Leaflet popup overrides ───────────────────────────── */
+.leaflet-popup-content-wrapper {
+  border-radius: 14px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: 272px !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+/* Remove default paragraph margin inside popups */
+.leaflet-popup-content p {
+  margin: 0;
+}
+
+.leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
+.leaflet-popup-tip {
+  background: white !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-close-button {
+  top: 10px !important;
+  right: 10px !important;
+  color: #9ca3af !important;
+  font-size: 18px !important;
+  padding: 4px !important;
+  width: 24px !important;
+  height: 24px !important;
+  line-height: 16px !important;
+  border-radius: 6px !important;
+  z-index: 10 !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #374151 !important;
+  background: #f3f4f6 !important;
+}
+
+/* ─── Map cursor in adding mode ─────────────────────────── */
+.map-adding-mode,
+.map-adding-mode .leaflet-container,
+.map-adding-mode .leaflet-interactive {
+  cursor: crosshair !important;
+}
+
+/* ─── Smooth circle marker hover ───────────────────────── */
+.leaflet-interactive {
+  transition: opacity 0.15s ease;
+}
+
+/* ─── Attribution small ─────────────────────────────────── */
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(4px);
+}

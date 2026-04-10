@@ -27,7 +27,22 @@ export default function App() {
     inProgress: reports.filter((r) => r.status === 'in_progress').length,
     cleaned: reports.filter((r) => r.status === 'cleaned').length,
   };
+// 📊 Extra Analytics
+  const percentCleaned = stats.total
+      ? Math.round((stats.cleaned / stats.total) * 100)
+      : 0;
 
+// 🧭 Most affected area
+  const areaCount = {};
+  reports.forEach((r) => {
+    if (!r.address) return;
+    areaCount[r.address] = (areaCount[r.address] || 0) + 1;
+  });
+
+  const mostAffectedArea =
+      Object.keys(areaCount).length > 0
+          ? Object.entries(areaCount).sort((a, b) => b[1] - a[1])[0][0]
+          : "N/A";
   // ── Handlers ─────────────────────────────────────────────
 
   /** Called when user clicks on the map while in adding mode */
@@ -75,7 +90,11 @@ export default function App() {
   /** Volunteer claims a cleanup task */
   const handleClaimCleanup = useCallback((id) => {
     setReports((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'in_progress' } : r))
+        prev.map((r) =>
+            r.id === id
+                ? { ...r, status: 'in_progress', claimedBy: 'You' }
+                : r
+        )
     );
   }, []);
 
@@ -101,7 +120,11 @@ export default function App() {
         onGeolocate={handleGeolocate}
       />
 
-      <Dashboard stats={stats} />
+      <Dashboard
+          stats={stats}
+          percentCleaned={percentCleaned}
+          mostAffectedArea={mostAffectedArea}
+      />
 
       <FilterBar filters={filters} onFilterChange={setFilters} />
 

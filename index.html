@@ -312,8 +312,18 @@ function applyLang() {
     el.textContent = t(el.dataset.i18n);
   });
   document.getElementById('lang-btn').textContent = currentLang === 'en' ? 'हिं' : 'EN';
+  // Remember which popup is open so we can reopen it after rebuild
+  var openId = null;
+  if (map) {
+    Object.keys(markerMap).forEach(function(id) {
+      if (markerMap[id].isPopupOpen()) openId = id;
+    });
+  }
+  // Rebuild markers (new popup HTML in correct language) + sidebar list
+  if (map) refresh();
+  // Reopen the same popup, now with translated content
+  if (openId && markerMap[openId]) markerMap[openId].openPopup();
   renderLeaderboard();
-  renderList();
   updateStats();
   var hint = document.getElementById('map-hint');
   if (hint) hint.textContent = t('mapHint');

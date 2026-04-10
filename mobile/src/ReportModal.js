@@ -6,13 +6,16 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
-import { COLORS, SEV_COLOR, SEV_BG, SEV_LABEL, STATUS_CFG } from './data';
+import { COLORS, SEV_COLOR, SEV_BG, SEV_LABEL, STATUS_CFG, STATUS_LABEL_KEY } from './data';
+import { useLang } from './LangContext';
 
-// prefillCoords: { lat, lng } passed when user tapped the map
-export default function ReportModal({ visible, report, prefillCoords, onClose, onSubmit, onAction }) {
+export default function ReportModal({
+  visible, report, prefillCoords,
+  onClose, onSubmit, onAction, onStartClean,
+}) {
+  const { t } = useLang();
   const isNew = !report;
 
-  // New-report form state
   const [desc, setDesc]         = useState('');
   const [severity, setSeverity] = useState('medium');
   const [image, setImage]       = useState(null);
@@ -25,7 +28,6 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
     if (visible && isNew) {
       setDesc(''); setSeverity('medium'); setImage(null);
       if (prefillCoords) {
-        // Came from map tap — use those coords, reverse geocode them
         setCoords(prefillCoords);
         reverseGeocode(prefillCoords.lat, prefillCoords.lng);
       } else {
@@ -52,30 +54,36 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
       await reverseGeocode(loc.coords.latitude, loc.coords.longitude);
-    } catch { /* silently ignore */ }
+    } catch { /* ignore */ }
     finally { setLocating(false); }
   }
 
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Photo library access required.'); return; }
+    if (status !== 'granted') {
+      Alert.alert(t('permNeeded'), t('photoLibAccess'));
+      return;
+    }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.6, allowsEditing: true, aspect: [4,3],
+      quality: 0.6, allowsEditing: true, aspect: [4, 3],
     });
     if (!res.canceled) setImage(res.assets[0].uri);
   }
 
   async function takePhoto() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Camera access required.'); return; }
-    const res = await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: true, aspect: [4,3] });
+    if (status !== 'granted') {
+      Alert.alert(t('permNeeded'), t('cameraAccess'));
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: true, aspect: [4, 3] });
     if (!res.canceled) setImage(res.assets[0].uri);
   }
 
   function handleSubmit() {
-    if (!desc.trim()) { Alert.alert('Missing info', 'Please describe the garbage spot.'); return; }
-    if (!address.trim() && !coords) { Alert.alert('Missing info', 'Please add a location — type an address or use GPS.'); return; }
+    if (!desc.trim()) { Alert.alert('', 'Please describe the garbage spot.'); return; }
+    if (!address.trim() && !coords) { Alert.alert('', 'Please add a location.'); return; }
     setSaving(true);
     setTimeout(() => {
       onSubmit({
@@ -89,9 +97,12 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
     }, 300);
   }
 
-  // ─── Detail view for an existing report ──────────────────────────────────
+  // ── Detail view ────────────────────────────────────────────────────────────
   if (!isNew && report) {
-    const cfg = STATUS_CFG[report.status];
+    const cfg         = STATUS_CFG[report.status] || STATUS_CFG['Reported'];
+    const statusText  = t(STATUS_LABEL_KEY[report.status] || 'labelReported');
+    const isPending   = report.status === 'pending_proof';
+
     return (
       <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
         <View style={s.sheet}>
@@ -108,8 +119,12 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
                     {SEV_LABEL[report.severity]}
                   </Text>
                 </View>
-                <View style={[s.dot, { backgroundColor: cfg.dot }]} />
-                <Text style={s.statusTxt}>{report.status}</Text>
+                <View style={[s.dot, {
+                  backgroundColor: isPending ? COLORS.purple : cfg.dot,
+                }]} />
+                <Text style={[s.statusTxt, isPending && { color: COLORS.purple }]}>
+                  {statusText}
+                </Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={s.closeBtn}>
@@ -119,9 +134,26 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
 
           <ScrollView style={s.detailBody} showsVerticalScrollIndicator={false}>
             <Text style={s.detailDesc}>{report.description}</Text>
-            {report.image && <Image source={{ uri: report.image }} style={s.detailImg} />}
+
+            {/* Before / After comparison */}
+            {report.image && report.afterImage ? (
+              <View style={s.baCard}>
+                <View style={s.baSide}>
+                  <Image source={{ uri: report.image }} style={s.baImg} />
+                  <Text style={s.baLabel}>{t('beforeLabel')}</Text>
+                </View>
+                <Text style={s.baArrow}>→</Text>
+                <View style={s.baSide}>
+                  <Image source={{ uri: report.afterImage }} style={s.baImg} />
+                  <Text style={[s.baLabel, { color: COLORS.green }]}>{t('afterLabel')}</Text>
+                </View>
+              </View>
+            ) : report.image ? (
+              <Image source={{ uri: report.image }} style={s.detailImg} />
+            ) : null}
           </ScrollView>
 
+          {/* Action buttons */}
           {report.status !== 'Cleaned' && (
             <View style={s.detailActions}>
               {report.status === 'Reported' && (
@@ -129,15 +161,23 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
                   style={[s.bigBtn, { backgroundColor: COLORS.orange }]}
                   onPress={() => { onAction(report.id, 'claim'); onClose(); }}
                 >
-                  <Text style={s.bigBtnTxt}>♻️  Claim Cleanup</Text>
+                  <Text style={s.bigBtnTxt}>{t('claimBtn')}</Text>
                 </TouchableOpacity>
               )}
               {report.status === 'In Progress' && (
                 <TouchableOpacity
                   style={[s.bigBtn, { backgroundColor: COLORS.green }]}
-                  onPress={() => { onAction(report.id, 'clean'); onClose(); }}
+                  onPress={() => onStartClean(report.id)}
                 >
-                  <Text style={s.bigBtnTxt}>✅  Mark as Cleaned</Text>
+                  <Text style={s.bigBtnTxt}>{t('markCleanedBtn')}</Text>
+                </TouchableOpacity>
+              )}
+              {isPending && (
+                <TouchableOpacity
+                  style={[s.bigBtn, { backgroundColor: COLORS.purple }]}
+                  onPress={() => onStartClean(report.id)}
+                >
+                  <Text style={s.bigBtnTxt}>{t('pendingProofBtn')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -147,14 +187,14 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
     );
   }
 
-  // ─── New report form ──────────────────────────────────────────────────────
+  // ── New report form ────────────────────────────────────────────────────────
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={s.sheet}>
           <View style={s.handle} />
           <View style={s.formHeader}>
-            <Text style={s.formTitle}>Report a Spot</Text>
+            <Text style={s.formTitle}>{t('reportTitle')}</Text>
             <TouchableOpacity onPress={onClose} style={s.closeBtn}>
               <Text style={s.closeTxt}>✕</Text>
             </TouchableOpacity>
@@ -163,45 +203,36 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
           <ScrollView style={s.formBody} showsVerticalScrollIndicator={false}>
 
             {/* Location */}
-            <Text style={s.label}>Location</Text>
-
-            {/* Editable address field */}
+            <Text style={s.label}>{t('location')}</Text>
             <View style={s.locInputRow}>
               <Text style={s.locPin}>📍</Text>
               <TextInput
                 style={s.locInput}
-                placeholder="Type an address or use GPS below…"
+                placeholder={t('locPlaceholder')}
                 placeholderTextColor={COLORS.textMuted}
                 value={locating ? '' : address}
                 onChangeText={txt => { setAddress(txt); setCoords(null); }}
                 returnKeyType="done"
                 editable={!locating}
               />
-              {locating && (
-                <ActivityIndicator size="small" color={COLORS.green} style={{ marginLeft: 8 }} />
-              )}
+              {locating && <ActivityIndicator size="small" color={COLORS.green} style={{ marginLeft: 8 }} />}
             </View>
-
-            {/* GPS + map-tap buttons */}
             <View style={s.locBtns}>
               <TouchableOpacity style={s.locBtn} onPress={grabLocation} activeOpacity={0.7}>
-                <Text style={s.locBtnTxt}>📡  Use GPS</Text>
+                <Text style={s.locBtnTxt}>{t('useGPS')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.locBtn} onPress={() => { onClose(); }} activeOpacity={0.7}>
-                <Text style={s.locBtnTxt}>🗺  Tap on Map</Text>
+              <TouchableOpacity style={s.locBtn} onPress={() => onClose()} activeOpacity={0.7}>
+                <Text style={s.locBtnTxt}>{t('tapOnMap')}</Text>
               </TouchableOpacity>
             </View>
-
             {coords && (
-              <Text style={s.coordsTxt}>
-                {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-              </Text>
+              <Text style={s.coordsTxt}>{coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</Text>
             )}
 
             {/* Severity */}
-            <Text style={s.label}>Severity</Text>
+            <Text style={s.label}>{t('sevLabel')}</Text>
             <View style={s.sevRow}>
-              {['low','medium','high'].map(sv => (
+              {['low', 'medium', 'high'].map(sv => (
                 <TouchableOpacity
                   key={sv}
                   style={[s.sevOpt, { borderColor: SEV_COLOR[sv] }, severity === sv && { backgroundColor: SEV_BG[sv] }]}
@@ -217,34 +248,33 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
             <TextInput
               style={s.textArea}
               multiline numberOfLines={4}
-              placeholder="Describe the garbage spot — type of waste, size, hazard level…"
+              placeholder="Describe the garbage spot…"
               placeholderTextColor={COLORS.textMuted}
               value={desc} onChangeText={setDesc}
               textAlignVertical="top"
             />
 
             {/* Photo */}
-            <Text style={s.label}>Photo (optional)</Text>
+            <Text style={s.label}>{t('photoOptional')}</Text>
             {image ? (
               <View>
                 <Image source={{ uri: image }} style={s.preview} />
                 <TouchableOpacity style={s.removeImg} onPress={() => setImage(null)}>
-                  <Text style={s.removeImgTxt}>✕ Remove</Text>
+                  <Text style={s.removeImgTxt}>{t('removePhoto')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={s.photoRow}>
                 <TouchableOpacity style={s.photoBtn} onPress={takePhoto}>
                   <Text style={{ fontSize: 22 }}>📷</Text>
-                  <Text style={s.photoBtnTxt}>Camera</Text>
+                  <Text style={s.photoBtnTxt}>{t('camera')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.photoBtn} onPress={pickImage}>
                   <Text style={{ fontSize: 22 }}>🖼️</Text>
-                  <Text style={s.photoBtnTxt}>Gallery</Text>
+                  <Text style={s.photoBtnTxt}>{t('gallery')}</Text>
                 </TouchableOpacity>
               </View>
             )}
-
             <View style={{ height: 24 }} />
           </ScrollView>
 
@@ -255,7 +285,7 @@ export default function ReportModal({ visible, report, prefillCoords, onClose, o
             >
               {saving
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={s.submitTxt}>Submit Report</Text>}
+                : <Text style={s.submitTxt}>{t('submitReport')}</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -287,11 +317,29 @@ const s = StyleSheet.create({
   closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   closeTxt: { fontSize: 16, color: COLORS.textMuted },
   detailBody: { flex: 1, padding: 16 },
-  detailDesc: { fontSize: 15, color: COLORS.textSecondary, lineHeight: 22 },
-  detailImg: { width: '100%', height: 200, borderRadius: 12, marginTop: 16 },
+  detailDesc: { fontSize: 15, color: COLORS.textSecondary, lineHeight: 22, marginBottom: 14 },
+  detailImg: { width: '100%', height: 200, borderRadius: 12 },
+
+  // Before/After card
+  baCard: {
+    flexDirection: 'row', alignItems: 'stretch',
+    gap: 8, marginTop: 4,
+  },
+  baSide: { flex: 1, gap: 4 },
+  baImg: {
+    width: '100%', height: 120, borderRadius: 10,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  baLabel: {
+    textAlign: 'center', fontSize: 10, fontWeight: '700',
+    color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  baArrow: { fontSize: 18, color: COLORS.textMuted, alignSelf: 'center' },
+
   detailActions: {
     padding: 16, paddingBottom: 32,
     borderTopWidth: 1, borderTopColor: COLORS.border,
+    gap: 10,
   },
   bigBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
   bigBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
@@ -310,7 +358,6 @@ const s = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginBottom: 8, marginTop: 16,
   },
-
   locInputRow: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: COLORS.surface, borderRadius: 10,
@@ -318,22 +365,15 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border,
   },
   locPin: { fontSize: 15, marginRight: 8 },
-  locInput: {
-    flex: 1, fontSize: 13, color: COLORS.textPrimary,
-    paddingVertical: 10,
-  },
+  locInput: { flex: 1, fontSize: 13, color: COLORS.textPrimary, paddingVertical: 10 },
   locBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
   locBtn: {
     flex: 1, paddingVertical: 10,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
     borderRadius: 10, alignItems: 'center',
   },
   locBtnTxt: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
-  coordsTxt: {
-    fontSize: 11, color: COLORS.textMuted,
-    marginTop: 5, marginLeft: 4,
-  },
+  coordsTxt: { fontSize: 11, color: COLORS.textMuted, marginTop: 5, marginLeft: 4 },
 
   sevRow: { flexDirection: 'row', gap: 10 },
   sevOpt: {

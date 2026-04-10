@@ -6,25 +6,15 @@
   <title>Kiyora – Smart Garbage Reporting</title>
   <meta name="description" content="Report garbage dumping spots and volunteer for cleanup in your community." />
   <meta name="theme-color" content="#2D8A4E" />
-
-  <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-
-  <!-- Open Graph (for sharing) -->
   <meta property="og:title" content="Kiyora – Smart Garbage Reporting" />
   <meta property="og:description" content="Report garbage dumping spots and volunteer for cleanup." />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="/icon-512.png" />
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
-
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-  <!-- App styles -->
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -37,10 +27,11 @@
   </div>
   <div class="header-right">
     <div class="nav-tabs">
-      <button class="nav-tab active" onclick="switchTab(this,'map')">🗺 Map</button>
-      <button class="nav-tab" onclick="switchTab(this,'list')">📋 Reports</button>
+      <button class="nav-tab active" onclick="switchTab(this,'map')" data-i18n="navMap">🗺 Map</button>
+      <button class="nav-tab" onclick="switchTab(this,'list')" data-i18n="navReports">📋 Reports</button>
     </div>
-    <button class="btn-report" onclick="openModal()">＋ Report Spot</button>
+    <button class="lang-toggle" id="lang-btn" onclick="toggleLang()">हिं</button>
+    <button class="btn-report" onclick="openModal()" data-i18n="btnReport">＋ Report Spot</button>
   </div>
 </header>
 
@@ -54,23 +45,23 @@
       <!-- Stats -->
       <div>
         <div class="sec-head" style="margin-bottom:10px">
-          <span class="sec-title">📊 Dashboard</span>
+          <span class="sec-title" data-i18n="dashboard">📊 Dashboard</span>
         </div>
         <div class="stats-grid">
           <div class="stat-card s-total">
-            <div class="stat-label">Total Reports</div>
+            <div class="stat-label" data-i18n="totalReports">Total Reports</div>
             <div class="stat-value" id="s-total">0</div>
           </div>
           <div class="stat-card s-prog">
-            <div class="stat-label">In Progress</div>
+            <div class="stat-label" data-i18n="inProgress">In Progress</div>
             <div class="stat-value" id="s-prog">0</div>
           </div>
           <div class="stat-card s-clean">
-            <div class="stat-label">Cleaned ✓</div>
+            <div class="stat-label" data-i18n="cleaned">Cleaned ✓</div>
             <div class="stat-value" id="s-clean">0</div>
           </div>
           <div class="stat-card s-high">
-            <div class="stat-label">High Severity</div>
+            <div class="stat-label" data-i18n="highSev">High Severity</div>
             <div class="stat-value" id="s-high">0</div>
           </div>
         </div>
@@ -78,22 +69,34 @@
 
       <div class="divider"></div>
 
+      <!-- Leaderboard -->
+      <div>
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="sec-title" data-i18n="leaderboard">🏆 Leaderboard</span>
+          <span style="font-size:11px;color:var(--text-muted)" data-i18n="topCleaners">Top Cleaners</span>
+        </div>
+        <div id="leaderboard-list"></div>
+      </div>
+
+      <div class="divider"></div>
+
       <!-- Filters -->
       <div>
         <div class="sec-head" style="margin-bottom:8px">
-          <span class="sec-title">🔍 Severity</span>
+          <span class="sec-title" data-i18n="severity">🔍 Severity</span>
         </div>
         <div class="chip-row" id="flt-sev">
-          <div class="chip active" data-v="all"    onclick="setSevFilter(this)">All</div>
-          <div class="chip c-low"  data-v="low"    onclick="setSevFilter(this)">🟢 Low</div>
-          <div class="chip c-med"  data-v="medium" onclick="setSevFilter(this)">🟠 Medium</div>
-          <div class="chip c-high" data-v="high"   onclick="setSevFilter(this)">🔴 High</div>
+          <div class="chip active" data-v="all"    onclick="setSevFilter(this)" data-i18n="all">All</div>
+          <div class="chip c-low"  data-v="low"    onclick="setSevFilter(this)" data-i18n="sevLow">🟢 Low</div>
+          <div class="chip c-med"  data-v="medium" onclick="setSevFilter(this)" data-i18n="sevMedium">🟠 Medium</div>
+          <div class="chip c-high" data-v="high"   onclick="setSevFilter(this)" data-i18n="sevHigh">🔴 High</div>
         </div>
         <div class="chip-row" id="flt-stat" style="margin-top:8px">
-          <div class="chip active" data-v="all"         onclick="setStatFilter(this)">All Status</div>
-          <div class="chip"        data-v="Reported"    onclick="setStatFilter(this)">Reported</div>
-          <div class="chip"        data-v="In Progress" onclick="setStatFilter(this)">In Progress</div>
-          <div class="chip"        data-v="Cleaned"     onclick="setStatFilter(this)">Cleaned</div>
+          <div class="chip active" data-v="all"           onclick="setStatFilter(this)" data-i18n="allStatus">All Status</div>
+          <div class="chip"        data-v="Reported"      onclick="setStatFilter(this)" data-i18n="reported">Reported</div>
+          <div class="chip"        data-v="In Progress"   onclick="setStatFilter(this)" data-i18n="inProgressChip">In Progress</div>
+          <div class="chip"        data-v="Cleaned"       onclick="setStatFilter(this)" data-i18n="cleanedChip">Cleaned</div>
+          <div class="chip c-pend" data-v="pending_proof" onclick="setStatFilter(this)" data-i18n="pendingProof">Pending Proof</div>
         </div>
       </div>
 
@@ -102,7 +105,7 @@
       <!-- Spots list -->
       <div>
         <div class="sec-head" style="margin-bottom:10px">
-          <span class="sec-title">📍 Spots</span>
+          <span class="sec-title" data-i18n="spots">📍 Spots</span>
           <span id="count-label" style="font-size:12px;color:var(--text-muted)">0 spots</span>
         </div>
         <div id="report-list"></div>
@@ -122,7 +125,7 @@
         <span class="leg-tag high">● High</span>
       </div>
     </div>
-    <div class="map-hint" id="map-hint">Click anywhere on the map to report a garbage spot 📍</div>
+    <div class="map-hint" id="map-hint" data-i18n="mapHint">Click anywhere on the map to report a garbage spot 📍</div>
   </div>
 
 </div>
@@ -132,176 +135,339 @@
   <div class="modal">
     <div class="modal-hd">
       <div>
-        <div class="modal-title">🗑 Report a Garbage Spot</div>
-        <div class="modal-sub">Set location via map click or GPS — no manual input</div>
+        <div class="modal-title" data-i18n="reportTitle">🗑 Report a Garbage Spot</div>
+        <div class="modal-sub" data-i18n="reportSub">Set location via map click or GPS</div>
       </div>
       <button class="btn-x" onclick="closeModal()">✕</button>
     </div>
-
     <div class="modal-body">
-
       <!-- Location -->
       <div class="fg">
-        <div class="flabel">📍 Location</div>
+        <div class="flabel" data-i18n="location">📍 Location</div>
         <div class="loc-box" id="loc-display">No location set yet</div>
         <div class="loc-btns">
-          <button class="btn-loc" onclick="useGPS()">📡 Use My GPS</button>
-          <button class="btn-loc" onclick="switchToMapClick()">🗺 Click on Map</button>
+          <button class="btn-loc" onclick="useGPS()" data-i18n="useGPS">📡 Use My GPS</button>
+          <button class="btn-loc" onclick="switchToMapClick()" data-i18n="clickMap">🗺 Click on Map</button>
         </div>
       </div>
-
       <!-- Severity -->
       <div class="fg">
-        <div class="flabel">⚠️ Severity Level</div>
+        <div class="flabel" data-i18n="sevLabel">⚠️ Severity Level</div>
         <div class="sev-opts">
-          <div class="sev-opt low"    onclick="pickSev('low',this)">
-            <div style="font-size:10px;margin-bottom:4px">🟢</div>Low
+          <div class="sev-opt low"         onclick="pickSev('low',this)">
+            <div style="font-size:10px;margin-bottom:4px">🟢</div>
+            <span data-i18n="sevLow">Low</span>
           </div>
           <div class="sev-opt medium pick" onclick="pickSev('medium',this)">
-            <div style="font-size:10px;margin-bottom:4px">🟠</div>Medium
+            <div style="font-size:10px;margin-bottom:4px">🟠</div>
+            <span data-i18n="sevMedium">Medium</span>
           </div>
-          <div class="sev-opt high"   onclick="pickSev('high',this)">
-            <div style="font-size:10px;margin-bottom:4px">🔴</div>High
+          <div class="sev-opt high"        onclick="pickSev('high',this)">
+            <div style="font-size:10px;margin-bottom:4px">🔴</div>
+            <span data-i18n="sevHigh">High</span>
           </div>
         </div>
       </div>
-
       <!-- Image -->
       <div class="fg">
-        <div class="flabel">📸 Photo <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+        <div class="flabel">
+          <span data-i18n="photo">📸 Photo</span>
+          <span style="font-weight:400;text-transform:none;letter-spacing:0"> </span>
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)" data-i18n="optional">(optional)</span>
+        </div>
         <div id="upload-wrap">
           <div class="upload-box">
             <input type="file" id="file-in" accept="image/*" onchange="handleFile(event)" />
             <div class="upload-icon-big">📷</div>
-            <div class="upload-hint">Click to upload a photo</div>
+            <div class="upload-hint" data-i18n="uploadHint">Click to upload a photo</div>
           </div>
         </div>
       </div>
-
     </div>
-
     <div class="modal-ft">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-green" onclick="submitReport()">📤 Submit Report</button>
+      <button class="btn btn-ghost" onclick="closeModal()" data-i18n="cancel">Cancel</button>
+      <button class="btn btn-green" onclick="submitReport()" data-i18n="submit">📤 Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AFTER PHOTO MODAL ══ -->
+<div class="overlay" id="after-overlay" style="display:none" onclick="bgCloseAfter(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title" data-i18n="afterTitle">📸 Upload After Photo</div>
+        <div class="modal-sub" data-i18n="afterSub">Cleanup proof is required to mark as cleaned</div>
+      </div>
+      <button class="btn-x" onclick="closeAfterModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Before preview -->
+      <div id="after-before-preview"></div>
+      <!-- After upload -->
+      <div class="fg">
+        <div class="flabel" data-i18n="afterLabel">After Photo (required)</div>
+        <div id="after-upload-wrap">
+          <div class="upload-box">
+            <input type="file" id="after-file-in" accept="image/*" onchange="handleAfterFile(event)" />
+            <div class="upload-icon-big">📷</div>
+            <div class="upload-hint" data-i18n="uploadHint">Click to upload a photo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeAfterModal()" data-i18n="cancel">Cancel</button>
+      <button class="btn btn-green" onclick="submitAfterPhoto()" data-i18n="markCleaned">✅ Mark as Cleaned</button>
     </div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRANSLATIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+const LANG = {
+  en: {
+    navMap: '🗺 Map', navReports: '📋 Reports', btnReport: '＋ Report Spot',
+    dashboard: '📊 Dashboard', totalReports: 'Total Reports', inProgress: 'In Progress',
+    cleaned: 'Cleaned ✓', highSev: 'High Severity',
+    leaderboard: '🏆 Leaderboard', topCleaners: 'Top Cleaners',
+    rank: 'Rank', volunteer: 'Volunteer', cleanups: 'cleanups', score: 'Score', pts: 'pts',
+    youLabel: 'You',
+    severity: '🔍 Severity', all: 'All',
+    sevLow: '🟢 Low', sevMedium: '🟠 Medium', sevHigh: '🔴 High',
+    allStatus: 'All Status', reported: 'Reported', inProgressChip: 'In Progress',
+    cleanedChip: 'Cleaned', pendingProof: 'Pending Proof',
+    spots: '📍 Spots', noSpots: 'No spots match the current filters',
+    mapHint: 'Click anywhere on the map to report a garbage spot 📍',
+    reportTitle: '🗑 Report a Garbage Spot', reportSub: 'Set location via map click or GPS',
+    location: '📍 Location', noLocation: 'No location set — use GPS or click the map',
+    useGPS: '📡 Use My GPS', clickMap: '🗺 Click on Map',
+    sevLabel: '⚠️ Severity Level', photo: '📸 Photo', optional: '(optional)',
+    uploadHint: 'Click to upload a photo', cancel: 'Cancel', submit: '📤 Submit Report',
+    afterTitle: '📸 Upload After Photo', afterSub: 'Cleanup proof is required to mark as cleaned',
+    afterLabel: 'After Photo (required)', markCleaned: '✅ Mark as Cleaned',
+    beforeLabel: 'Before', afterImgLabel: 'After',
+    claimBtn: '🙋 Claim for Cleanup', cleanedBtn: '✅ Mark as Cleaned', cleanedDone: '✓ This spot is cleaned',
+    pendingProofBtn: '📸 Upload Proof', statusReported: 'Reported', statusInProgress: 'In Progress',
+    statusCleaned: 'Cleaned', statusPending: 'Pending Proof',
+    toastSubmit: '📍 Report submitted! Thank you.',
+    toastClaim: "🔧 Cleanup claimed! You're making a difference.",
+    toastCleaned: '✅ Marked as cleaned! Great work.',
+    toastNoLoc: '❌ Please set a location first',
+    toastGPSFail: '❌ Could not get location. Try clicking the map.',
+    toastGPSGetting: '📡 Getting your location…', toastGPSOk: '✅ Location captured from GPS',
+    toastMapClick: '🗺 Click anywhere on the map to drop a pin',
+    toastNoPhoto: '📸 Please upload an after photo to confirm cleanup',
+    toastPendingProof: '📸 Upload an after photo to complete the cleanup',
+    pointsEarned: 'pts earned!',
+  },
+  hi: {
+    navMap: '🗺 नक्शा', navReports: '📋 रिपोर्ट', btnReport: '＋ स्थान रिपोर्ट करें',
+    dashboard: '📊 डैशबोर्ड', totalReports: 'कुल रिपोर्ट', inProgress: 'प्रगति में',
+    cleaned: 'साफ ✓', highSev: 'उच्च गंभीरता',
+    leaderboard: '🏆 लीडरबोर्ड', topCleaners: 'शीर्ष स्वयंसेवक',
+    rank: 'रैंक', volunteer: 'स्वयंसेवक', cleanups: 'सफाई', score: 'अंक', pts: 'अंक',
+    youLabel: 'आप',
+    severity: '🔍 गंभीरता', all: 'सभी',
+    sevLow: '🟢 कम', sevMedium: '🟠 मध्यम', sevHigh: '🔴 उच्च',
+    allStatus: 'सभी स्थिति', reported: 'रिपोर्ट किया', inProgressChip: 'प्रगति में',
+    cleanedChip: 'साफ', pendingProof: 'प्रमाण लंबित',
+    spots: '📍 स्थान', noSpots: 'कोई स्थान नहीं मिला',
+    mapHint: 'गार्बेज रिपोर्ट करने के लिए नक्शे पर क्लिक करें 📍',
+    reportTitle: '🗑 कूड़े का स्थान रिपोर्ट करें', reportSub: 'GPS या नक्शे पर क्लिक करके स्थान सेट करें',
+    location: '📍 स्थान', noLocation: 'कोई स्थान नहीं — GPS उपयोग करें या नक्शे पर क्लिक करें',
+    useGPS: '📡 मेरा GPS', clickMap: '🗺 नक्शे पर क्लिक',
+    sevLabel: '⚠️ गंभीरता स्तर', photo: '📸 फ़ोटो', optional: '(वैकल्पिक)',
+    uploadHint: 'फ़ोटो अपलोड करें', cancel: 'रद्द करें', submit: '📤 रिपोर्ट जमा करें',
+    afterTitle: '📸 बाद की फ़ोटो अपलोड करें', afterSub: 'साफ चिह्नित करने के लिए प्रमाण आवश्यक है',
+    afterLabel: 'बाद की फ़ोटो (आवश्यक)', markCleaned: '✅ साफ चिह्नित करें',
+    beforeLabel: 'पहले', afterImgLabel: 'बाद',
+    claimBtn: '🙋 सफाई के लिए दावा करें', cleanedBtn: '✅ साफ चिह्नित करें', cleanedDone: '✓ यह स्थान साफ है',
+    pendingProofBtn: '📸 प्रमाण अपलोड करें', statusReported: 'रिपोर्ट किया', statusInProgress: 'प्रगति में',
+    statusCleaned: 'साफ', statusPending: 'प्रमाण लंबित',
+    toastSubmit: '📍 रिपोर्ट जमा हुई! धन्यवाद।',
+    toastClaim: '🔧 सफाई दावा किया! आप बदलाव ला रहे हैं।',
+    toastCleaned: '✅ साफ चिह्नित! बहुत अच्छा।',
+    toastNoLoc: '❌ कृपया पहले स्थान सेट करें',
+    toastGPSFail: '❌ स्थान नहीं मिला। नक्शे पर क्लिक करें।',
+    toastGPSGetting: '📡 आपका स्थान प्राप्त हो रहा है…', toastGPSOk: '✅ GPS से स्थान प्राप्त हुआ',
+    toastMapClick: '🗺 पिन डालने के लिए नक्शे पर क्लिक करें',
+    toastNoPhoto: '📸 कृपया सफाई प्रमाण के लिए फ़ोटो अपलोड करें',
+    toastPendingProof: '📸 सफाई पूरी करने के लिए बाद की फ़ोटो अपलोड करें',
+    pointsEarned: 'अंक मिले!',
+  }
+};
 
+let currentLang = localStorage.getItem('kiyora-lang') || 'en';
+
+function t(key) {
+  return (LANG[currentLang] && LANG[currentLang][key]) || LANG.en[key] || key;
+}
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.getElementById('lang-btn').textContent = currentLang === 'en' ? 'हिं' : 'EN';
+  renderLeaderboard();
+  renderList();
+  updateStats();
+  var hint = document.getElementById('map-hint');
+  if (hint) hint.textContent = t('mapHint');
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'hi' : 'en';
+  localStorage.setItem('kiyora-lang', currentLang);
+  applyLang();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════════════════════════════════════
+const SEV_POINTS = { low: 10, medium: 25, high: 50 };
+
+var leaderboard = [
+  { name: 'Priya S.',  cleanups: 12, score: 340, isMe: false },
+  { name: 'Raj M.',    cleanups:  9, score: 275, isMe: false },
+  { name: 'Anita K.',  cleanups:  7, score: 190, isMe: false },
+  { name: 'Dev T.',    cleanups:  4, score: 115, isMe: false },
+];
+var myCleanups = 0, myScore = 0;
+
+function addToLeaderboard(severity) {
+  var pts = SEV_POINTS[severity] || 10;
+  myCleanups += 1;
+  myScore    += pts;
+  var idx = leaderboard.findIndex(function(e) { return e.isMe; });
+  if (idx >= 0) {
+    leaderboard[idx].cleanups = myCleanups;
+    leaderboard[idx].score    = myScore;
+    leaderboard[idx].name     = t('youLabel');
+  } else {
+    leaderboard.push({ name: t('youLabel'), cleanups: myCleanups, score: myScore, isMe: true });
+  }
+  leaderboard.sort(function(a, b) { return b.score - a.score; });
+  renderLeaderboard();
+  showToast('🏆 +' + pts + ' ' + t('pointsEarned'));
+}
+
+function renderLeaderboard() {
+  var el = document.getElementById('leaderboard-list');
+  if (!el) return;
+  var medals = ['🥇','🥈','🥉'];
+  // If "You" entry exists, update name for current language
+  leaderboard.forEach(function(e) {
+    if (e.isMe) e.name = t('youLabel');
+  });
+  el.innerHTML = leaderboard.slice(0, 5).map(function(entry, i) {
+    var medal = medals[i]
+      ? medals[i]
+      : '<span class="rank-num">' + (i + 1) + '</span>';
+    var youTag = entry.isMe
+      ? ' <span class="lb-you-tag">' + t('youLabel') + '</span>'
+      : '';
+    return '<div class="lb-row' + (entry.isMe ? ' lb-me' : '') + '">' +
+      '<div class="lb-rank">' + medal + '</div>' +
+      '<div class="lb-name">' + entry.name + youTag + '</div>' +
+      '<div class="lb-stats">' +
+        '<span class="lb-cleanups">' + entry.cleanups + ' <span style="font-size:10px;opacity:.65">' + t('cleanups') + '</span></span>' +
+        '<span class="lb-score" id="lbs-' + i + '">' + entry.score + ' <span style="font-size:10px;font-weight:500;opacity:.7">' + t('pts') + '</span></span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
 function timeAgo(date) {
-  const s = Math.floor((Date.now() - new Date(date)) / 1000);
+  var s = Math.floor((Date.now() - new Date(date)) / 1000);
   if (s < 60)  return 'just now';
-  const m = Math.floor(s / 60);
+  var m = Math.floor(s / 60);
   if (m < 60)  return m + 'm ago';
-  const h = Math.floor(m / 60);
+  var h = Math.floor(m / 60);
   if (h < 24)  return h + 'h ago';
   return Math.floor(h / 24) + 'd ago';
 }
 
-// Status display config
+function statusLabel(status) {
+  var map = {
+    'Reported':      t('statusReported'),
+    'In Progress':   t('statusInProgress'),
+    'Cleaned':       t('statusCleaned'),
+    'pending_proof': t('statusPending'),
+  };
+  return map[status] || status;
+}
+
 const STATUS_CFG = {
-  'Reported':    { dot: 'rep',  icon: '🗑️',  iconBg: '#F0EFEB', label: 'Reported'    },
-  'In Progress': { dot: 'prog', icon: '♻️',  iconBg: '#D5F0E0', label: 'In Progress' },
-  'Cleaned':     { dot: 'cln',  icon: '✅',  iconBg: '#C8EDDA', label: 'Cleaned'     },
+  'Reported':      { dot: 'rep',  icon: '🗑️', iconBg: '#F0EFEB' },
+  'In Progress':   { dot: 'prog', icon: '♻️', iconBg: '#D5F0E0' },
+  'Cleaned':       { dot: 'cln',  icon: '✅', iconBg: '#C8EDDA' },
+  'pending_proof': { dot: 'pend', icon: '📸', iconBg: '#FEF3E8' },
 };
 
-const SEV_COLOR  = { low: '#2D8A4E', medium: '#C8630A', high: '#C0392B' };
-const SEV_ABBR   = { low: 'Low',     medium: 'Med',     high: 'High'    };
-const SEV_LABEL  = { low: 'Low',     medium: 'Medium',  high: 'High'    };
+const SEV_COLOR = { low: '#2D8A4E', medium: '#C8630A', high: '#C0392B' };
+const SEV_BG    = { low: '#EBF7EF', medium: '#FEF3E8', high: '#FDECEA' };
+const SEV_ABBR  = { low: 'Low',     medium: 'Med',     high: 'High'    };
+const SEV_LABEL = { low: 'Low',     medium: 'Medium',  high: 'High'    };
 
-// ── Seed data — Indian cities ─────────────────────────────────────────────────
-const now = Date.now();
-const SEED_REPORTS = [
-  {
-    id: 'r1', lat: 13.0524, lng: 80.2488,
-    severity: 'high', status: 'Reported',
-    description: 'Overflowing bins and plastic waste scattered across the footpath near the market junction.',
-    image: null, timestamp: new Date(now - 2*3600*1000), address: 'Anna Salai, Chennai'
-  },
-  {
-    id: 'r2', lat: 13.0418, lng: 80.2341,
-    severity: 'medium', status: 'In Progress',
-    description: 'Vendor waste and packaging piling up behind the market stalls.',
-    image: null, timestamp: new Date(now - 4*3600*1000), address: 'T. Nagar Market, Chennai'
-  },
-  {
-    id: 'r3', lat: 13.1143, lng: 80.1548,
-    severity: 'low', status: 'Cleaned',
-    description: 'Debris from construction site cleared by local volunteer team.',
-    image: null, timestamp: new Date(now - 26*3600*1000), address: 'Ambattur Industrial Area'
-  },
-  {
-    id: 'r4', lat: 12.9762, lng: 77.6033,
-    severity: 'high', status: 'Reported',
-    description: 'Large pile of garbage dumped on the service road, blocking drainage.',
-    image: null, timestamp: new Date(now - 3*3600*1000), address: 'MG Road, Bengaluru'
-  },
-  {
-    id: 'r5', lat: 19.1075, lng: 72.8370,
-    severity: 'medium', status: 'Reported',
-    description: 'Household waste and food scraps left near the bus stop, attracting pests.',
-    image: null, timestamp: new Date(now - 5*3600*1000), address: 'Andheri West, Mumbai'
-  },
-  {
-    id: 'r6', lat: 28.6315, lng: 77.2167,
-    severity: 'low', status: 'In Progress',
-    description: 'Discarded packaging and bottles near the park entrance.',
-    image: null, timestamp: new Date(now - 6*3600*1000), address: 'Connaught Place, New Delhi'
-  },
-  {
-    id: 'r7', lat: 22.5354, lng: 88.3506,
-    severity: 'high', status: 'Reported',
-    description: 'Open waste burning near residential buildings causing smoke and health hazard.',
-    image: null, timestamp: new Date(now - 1*3600*1000), address: 'Park Street, Kolkata'
-  },
+// ═══════════════════════════════════════════════════════════════════════════════
+// SEED DATA
+// ═══════════════════════════════════════════════════════════════════════════════
+var now = Date.now();
+var reports = [
+  { id:'r1', lat:13.0524, lng:80.2488, severity:'high',   status:'Reported',    description:'Overflowing bins and plastic waste scattered across the footpath near the market junction.', image:null, afterImage:null, timestamp:new Date(now-2*3600*1000), address:'Anna Salai, Chennai' },
+  { id:'r2', lat:13.0418, lng:80.2341, severity:'medium', status:'In Progress', description:'Vendor waste and packaging piling up behind the market stalls.', image:null, afterImage:null, timestamp:new Date(now-4*3600*1000), address:'T. Nagar Market, Chennai' },
+  { id:'r3', lat:13.1143, lng:80.1548, severity:'low',    status:'Cleaned',     description:'Debris from construction site cleared by local volunteer team.', image:null, afterImage:null, timestamp:new Date(now-26*3600*1000), address:'Ambattur Industrial Area' },
+  { id:'r4', lat:12.9762, lng:77.6033, severity:'high',   status:'Reported',    description:'Large pile of garbage dumped on the service road, blocking drainage.', image:null, afterImage:null, timestamp:new Date(now-3*3600*1000), address:'MG Road, Bengaluru' },
+  { id:'r5', lat:19.1075, lng:72.8370, severity:'medium', status:'Reported',    description:'Household waste and food scraps left near the bus stop, attracting pests.', image:null, afterImage:null, timestamp:new Date(now-5*3600*1000), address:'Andheri West, Mumbai' },
+  { id:'r6', lat:28.6315, lng:77.2167, severity:'low',    status:'In Progress', description:'Discarded packaging and bottles near the park entrance.', image:null, afterImage:null, timestamp:new Date(now-6*3600*1000), address:'Connaught Place, New Delhi' },
+  { id:'r7', lat:22.5354, lng:88.3506, severity:'high',   status:'Reported',    description:'Open waste burning near residential buildings causing smoke and health hazard.', image:null, afterImage:null, timestamp:new Date(now-1*3600*1000), address:'Park Street, Kolkata' },
 ];
 
-// ── App state ─────────────────────────────────────────────────────────────────
-let reports    = [...SEED_REPORTS];
-let sevFilter  = 'all';
-let statFilter = 'all';
-let pendingLat = null, pendingLng = null;
-let pendingSev = 'medium';
-let pendingImg = null;
+// ═══════════════════════════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+var sevFilter  = 'all';
+var statFilter = 'all';
+var pendingLat = null, pendingLng = null;
+var pendingSev = 'medium';
+var pendingImg = null;
+var pendingAfterReportId = null;
+var pendingAfterImg      = null;
 
-// ── Map ───────────────────────────────────────────────────────────────────────
-let map;
-let markerMap = {};
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════════════════════════════════════
+var map;
+var markerMap = {};
 
-// SVG teardrop pin, white inner dot
 function makePinIcon(color) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 42" width="28" height="42">
-    <filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="rgba(0,0,0,0.28)"/></filter>
-    <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 28 14 28s14-17.5 14-28C28 6.27 21.73 0 14 0z"
-          fill="${color}" filter="url(#ds)"/>
-    <circle cx="14" cy="13" r="5.5" fill="white"/>
-  </svg>`;
-  return L.divIcon({
-    html: svg,
-    iconSize:    [28, 42],
-    iconAnchor:  [14, 42],
-    popupAnchor: [0, -44],
-    className:   ''
-  });
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 42" width="28" height="42">' +
+    '<filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="rgba(0,0,0,0.28)"/></filter>' +
+    '<path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 28 14 28s14-17.5 14-28C28 6.27 21.73 0 14 0z" fill="' + color + '" filter="url(#ds)"/>' +
+    '<circle cx="14" cy="13" r="5.5" fill="white"/>' +
+    '</svg>';
+  return L.divIcon({ html: svg, iconSize:[28,42], iconAnchor:[14,42], popupAnchor:[0,-44], className:'' });
 }
 
 function initMap() {
   map = L.map('map').setView([20.5937, 78.9629], 5);
-
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19
   }).addTo(map);
 
-  // Clicking the map → open report modal with that location
   map.on('click', function(e) {
     pendingLat = e.latlng.lat;
     pendingLng = e.latlng.lng;
-    const hint = document.getElementById('map-hint');
-    if (hint) { hint.style.opacity = '0'; setTimeout(() => hint.remove(), 500); }
+    var hint = document.getElementById('map-hint');
+    if (hint) { hint.style.opacity = '0'; setTimeout(function() { hint.remove(); }, 500); }
     openModal();
   });
 
@@ -309,67 +475,78 @@ function initMap() {
 }
 
 function renderMarkers() {
-  Object.values(markerMap).forEach(m => map.removeLayer(m));
+  Object.values(markerMap).forEach(function(m) { map.removeLayer(m); });
   markerMap = {};
-
-  getFiltered().forEach(r => {
-    const marker = L.marker([r.lat, r.lng], {
-      icon: makePinIcon(SEV_COLOR[r.severity]),
+  getFiltered().forEach(function(r) {
+    var color = r.status === 'pending_proof' ? '#9333EA' : SEV_COLOR[r.severity];
+    var marker = L.marker([r.lat, r.lng], {
+      icon: makePinIcon(color),
       opacity: r.status === 'Cleaned' ? 0.55 : 1
     });
-
     marker.bindTooltip(
-      `<span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600">${r.address}</span>`,
-      { direction: 'top', offset: [0, -44] }
+      '<span style="font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600">' + r.address + '</span>',
+      { direction:'top', offset:[0,-44] }
     );
-
-    marker.bindPopup(buildPopup(r), { maxWidth: 300, minWidth: 280 });
-
-    marker.on('click', () => {
-      document.querySelectorAll('.report-card').forEach(c => c.classList.remove('sel'));
-      const card = document.getElementById('card-' + r.id);
-      if (card) { card.classList.add('sel'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    marker.bindPopup(buildPopup(r), { maxWidth:320, minWidth:290 });
+    marker.on('click', function() {
+      document.querySelectorAll('.report-card').forEach(function(c) { c.classList.remove('sel'); });
+      var card = document.getElementById('card-' + r.id);
+      if (card) { card.classList.add('sel'); card.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
     });
-
     marker.addTo(map);
     markerMap[r.id] = marker;
   });
 }
 
 function buildPopup(r) {
-  const cfg = STATUS_CFG[r.status];
-  const sevColor = SEV_COLOR[r.severity];
-  const sevBg    = { low:'#EBF7EF', medium:'#FEF3E8', high:'#FDECEA' }[r.severity];
+  var cfg      = STATUS_CFG[r.status] || STATUS_CFG['Reported'];
+  var sevColor = SEV_COLOR[r.severity];
+  var sevBg    = SEV_BG[r.severity];
 
-  let btn;
+  // Before/After OR single image OR placeholder
+  var mediaEl;
+  if (r.image && r.afterImage) {
+    mediaEl =
+      '<div class="pu-ba">' +
+        '<div class="pu-ba-side"><img src="' + r.image + '" alt="Before" loading="lazy"><div class="pu-ba-label">' + t('beforeLabel') + '</div></div>' +
+        '<div class="pu-ba-arrow">→</div>' +
+        '<div class="pu-ba-side"><img src="' + r.afterImage + '" alt="After" loading="lazy"><div class="pu-ba-label">' + t('afterImgLabel') + '</div></div>' +
+      '</div>';
+  } else if (r.image) {
+    mediaEl = '<img class="pu-img" src="' + r.image + '" alt="Photo" loading="lazy">';
+  } else {
+    mediaEl = '<div class="pu-ph" style="font-size:52px;background:' + cfg.iconBg + '">' + cfg.icon + '</div>';
+  }
+
+  // Action button
+  var btn;
   if (r.status === 'Reported')
-    btn = `<button class="pu-btn claim"   onclick="claimCleanup('${r.id}')">🙋 Claim for Cleanup</button>`;
+    btn = '<button class="pu-btn claim" onclick="claimCleanup(\'' + r.id + '\')">' + t('claimBtn') + '</button>';
   else if (r.status === 'In Progress')
-    btn = `<button class="pu-btn cleaned" onclick="markCleaned('${r.id}')">✅ Mark as Cleaned</button>`;
+    btn = '<button class="pu-btn cleaned" onclick="openAfterModal(\'' + r.id + '\')">' + t('cleanedBtn') + '</button>';
+  else if (r.status === 'pending_proof')
+    btn = '<button class="pu-btn claim" onclick="openAfterModal(\'' + r.id + '\')">' + t('pendingProofBtn') + '</button>';
   else
-    btn = `<div class="pu-btn done">✓ This spot is cleaned</div>`;
+    btn = '<div class="pu-btn done">' + t('cleanedDone') + '</div>';
 
-  const imgEl = r.image
-    ? `<img class="pu-img" src="${r.image}" alt="Photo" loading="lazy">`
-    : `<div class="pu-ph" style="font-size:52px;background:${cfg.iconBg}">${cfg.icon}</div>`;
-
-  return `
-    ${imgEl}
-    <div class="pu-body">
-      <div class="pu-loc">${r.address}</div>
-      <div class="pu-row">
-        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${sevBg};color:${sevColor}">● ${SEV_LABEL[r.severity]}</span>
-        <span class="pu-stat">${r.status}</span>
-      </div>
-      ${r.description ? `<p style="font-size:12px;color:#6B6963;line-height:1.55;margin-bottom:10px">${r.description}</p>` : ''}
-      <p style="font-size:11px;color:#A09C95;margin-bottom:10px">${timeAgo(r.timestamp)}</p>
-      ${btn}
-    </div>`;
+  return mediaEl +
+    '<div class="pu-body">' +
+      '<div class="pu-loc">' + r.address + '</div>' +
+      '<div class="pu-row">' +
+        '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:' + sevBg + ';color:' + sevColor + '">● ' + SEV_LABEL[r.severity] + '</span>' +
+        '<span class="pu-stat">' + statusLabel(r.status) + '</span>' +
+      '</div>' +
+      (r.description ? '<p style="font-size:12px;color:#6B6963;line-height:1.55;margin-bottom:10px">' + r.description + '</p>' : '') +
+      '<p style="font-size:11px;color:#A09C95;margin-bottom:10px">' + timeAgo(r.timestamp) + '</p>' +
+      btn +
+    '</div>';
 }
 
-// ── Filters ───────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════════════════════
 function getFiltered() {
-  return reports.filter(r => {
+  return reports.filter(function(r) {
     if (sevFilter  !== 'all' && r.severity !== sevFilter)  return false;
     if (statFilter !== 'all' && r.status   !== statFilter) return false;
     return true;
@@ -377,14 +554,14 @@ function getFiltered() {
 }
 
 function setSevFilter(el) {
-  document.querySelectorAll('#flt-sev .chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('#flt-sev .chip').forEach(function(c) { c.classList.remove('active'); });
   el.classList.add('active');
   sevFilter = el.dataset.v;
   refresh();
 }
 
 function setStatFilter(el) {
-  document.querySelectorAll('#flt-stat .chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('#flt-stat .chip').forEach(function(c) { c.classList.remove('active'); });
   el.classList.add('active');
   statFilter = el.dataset.v;
   refresh();
@@ -395,59 +572,70 @@ function refresh() {
   renderList();
 }
 
-// ── Sidebar list ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// SIDEBAR LIST
+// ═══════════════════════════════════════════════════════════════════════════════
 function renderList() {
-  const filtered = getFiltered();
+  var filtered = getFiltered();
   document.getElementById('count-label').textContent =
     filtered.length + ' spot' + (filtered.length !== 1 ? 's' : '');
 
-  const el = document.getElementById('report-list');
+  var el = document.getElementById('report-list');
   if (!filtered.length) {
-    el.innerHTML = `<div class="empty-st"><div class="ei">🔍</div><div class="et">No spots match the current filters</div></div>`;
+    el.innerHTML = '<div class="empty-st"><div class="ei">🔍</div><div class="et">' + t('noSpots') + '</div></div>';
     return;
   }
 
-  el.innerHTML = filtered.map(r => {
-    const cfg = STATUS_CFG[r.status];
-    const imgEl = r.image
-      ? `<img src="${r.image}" class="card-thumb" alt="" loading="lazy">`
-      : `<div class="card-thumb-ph" style="background:${cfg.iconBg}">${cfg.icon}</div>`;
+  el.innerHTML = filtered.map(function(r) {
+    var cfg = STATUS_CFG[r.status] || STATUS_CFG['Reported'];
+    var imgEl = r.image
+      ? '<img src="' + r.image + '" class="card-thumb" alt="" loading="lazy">'
+      : '<div class="card-thumb-ph" style="background:' + cfg.iconBg + '">' + cfg.icon + '</div>';
 
-    return `
-      <div class="report-card sev-${r.severity}" id="card-${r.id}" onclick="flyTo('${r.id}')" style="margin-bottom:8px">
-        <div class="card-top">
-          <div class="card-loc">${r.address}</div>
-          <div class="sev-badge ${r.severity}">● ${SEV_ABBR[r.severity]}</div>
-        </div>
-        <div class="card-bottom">
-          ${imgEl}
-          <div class="card-info">
-            <div class="card-status-row"><span class="sdot ${cfg.dot}"></span>${r.status}</div>
-            <div class="card-time">🕐 ${timeAgo(r.timestamp)}</div>
-          </div>
-        </div>
-      </div>`;
+    var baBadge = r.afterImage
+      ? '<div class="ba-badge">📷 Before/After</div>'
+      : '';
+
+    return '<div class="report-card sev-' + r.severity + '" id="card-' + r.id + '" onclick="flyTo(\'' + r.id + '\')" style="margin-bottom:8px">' +
+      '<div class="card-top">' +
+        '<div class="card-loc">' + r.address + '</div>' +
+        '<div class="sev-badge ' + r.severity + '">● ' + SEV_ABBR[r.severity] + '</div>' +
+      '</div>' +
+      '<div class="card-bottom">' +
+        imgEl +
+        '<div class="card-info">' +
+          '<div class="card-status-row"><span class="sdot ' + cfg.dot + '"></span>' + statusLabel(r.status) + '</div>' +
+          '<div class="card-time">🕐 ' + timeAgo(r.timestamp) + '</div>' +
+          baBadge +
+        '</div>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
 function flyTo(id) {
-  const r = reports.find(x => x.id === id);
+  var r = reports.find(function(x) { return x.id === id; });
   if (!r) return;
-  document.querySelectorAll('.report-card').forEach(c => c.classList.remove('sel'));
-  document.getElementById('card-' + id)?.classList.add('sel');
+  document.querySelectorAll('.report-card').forEach(function(c) { c.classList.remove('sel'); });
+  var card = document.getElementById('card-' + id);
+  if (card) card.classList.add('sel');
   map.flyTo([r.lat, r.lng], 15, { duration: 0.8 });
-  setTimeout(() => markerMap[id]?.openPopup(), 900);
+  setTimeout(function() { markerMap[id] && markerMap[id].openPopup(); }, 900);
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════════════════════════
 function updateStats() {
   document.getElementById('s-total').textContent = reports.length;
-  document.getElementById('s-prog').textContent  = reports.filter(r => r.status === 'In Progress').length;
-  document.getElementById('s-clean').textContent = reports.filter(r => r.status === 'Cleaned').length;
-  document.getElementById('s-high').textContent  = reports.filter(r => r.severity === 'high').length;
+  document.getElementById('s-prog').textContent  = reports.filter(function(r) { return r.status === 'In Progress'; }).length;
+  document.getElementById('s-clean').textContent = reports.filter(function(r) { return r.status === 'Cleaned'; }).length;
+  document.getElementById('s-high').textContent  = reports.filter(function(r) { return r.severity === 'high' && r.status !== 'Cleaned'; }).length;
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// REPORT MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
 function openModal() {
   updateLocDisplay();
   document.getElementById('overlay').style.display = 'flex';
@@ -465,48 +653,45 @@ function bgClose(e) {
 
 function switchToMapClick() {
   closeModal();
-  showToast('🗺 Click anywhere on the map to drop a pin');
+  showToast(t('toastMapClick'));
 }
 
 function updateLocDisplay() {
-  const box = document.getElementById('loc-display');
+  var box = document.getElementById('loc-display');
   if (pendingLat !== null) {
     box.textContent = '📍 ' + pendingLat.toFixed(5) + ', ' + pendingLng.toFixed(5);
     box.classList.add('set');
   } else {
-    box.textContent = 'No location set — use GPS or click the map';
+    box.textContent = t('noLocation');
     box.classList.remove('set');
   }
 }
 
-// ── GPS ───────────────────────────────────────────────────────────────────────
 function useGPS() {
   if (!navigator.geolocation) { showToast('❌ Geolocation not supported'); return; }
-  showToast('📡 Getting your location…');
+  showToast(t('toastGPSGetting'));
   navigator.geolocation.getCurrentPosition(
     function(pos) {
       pendingLat = pos.coords.latitude;
       pendingLng = pos.coords.longitude;
       updateLocDisplay();
-      showToast('✅ Location captured from GPS');
+      showToast(t('toastGPSOk'));
     },
-    function() { showToast('❌ Could not get location. Try clicking the map.'); },
+    function() { showToast(t('toastGPSFail')); },
     { timeout: 10000 }
   );
 }
 
-// ── Severity picker ───────────────────────────────────────────────────────────
 function pickSev(val, el) {
-  document.querySelectorAll('.sev-opt').forEach(o => o.classList.remove('pick'));
+  document.querySelectorAll('.sev-opt').forEach(function(o) { o.classList.remove('pick'); });
   el.classList.add('pick');
   pendingSev = val;
 }
 
-// ── Image upload ──────────────────────────────────────────────────────────────
 function handleFile(e) {
-  const file = e.target.files[0];
+  var file = e.target.files[0];
   if (!file || !file.type.startsWith('image/')) return;
-  const reader = new FileReader();
+  var reader = new FileReader();
   reader.onload = function(ev) {
     pendingImg = ev.target.result;
     document.getElementById('upload-wrap').innerHTML =
@@ -523,68 +708,152 @@ function resetUpload() {
     '<div class="upload-box">' +
     '<input type="file" id="file-in" accept="image/*" onchange="handleFile(event)" />' +
     '<div class="upload-icon-big">📷</div>' +
-    '<div class="upload-hint">Click to upload a photo</div>' +
+    '<div class="upload-hint">' + t('uploadHint') + '</div>' +
     '</div>';
 }
 
 function clearImage() { pendingImg = null; resetUpload(); }
 
-// ── Submit ────────────────────────────────────────────────────────────────────
 function submitReport() {
-  if (pendingLat === null) { showToast('❌ Please set a location first'); return; }
-
-  const r = {
+  if (pendingLat === null) { showToast(t('toastNoLoc')); return; }
+  var r = {
     id:          'r' + Date.now(),
     lat:         pendingLat, lng: pendingLng,
-    severity:    pendingSev,
-    status:      'Reported',
-    description: '',
-    image:       pendingImg,
+    severity:    pendingSev, status: 'Reported',
+    description: '', image: pendingImg, afterImage: null,
     timestamp:   new Date(),
-    address:     pendingLat.toFixed(4) + '°, ' + pendingLng.toFixed(4) + '°'
+    address:     pendingLat.toFixed(4) + '°, ' + pendingLng.toFixed(4) + '°',
   };
-
   reports.unshift(r);
   pendingLat = pendingLng = null;
   pendingImg = null;
-
   closeModal();
-  updateStats();
-  refresh();
-  showToast('📍 Report submitted! Thank you.');
+  updateStats(); refresh();
+  showToast(t('toastSubmit'));
   setTimeout(function() {
     map.flyTo([r.lat, r.lng], 14, { duration: 0.8 });
-    setTimeout(function() { markerMap[r.id]?.openPopup(); }, 900);
+    setTimeout(function() { markerMap[r.id] && markerMap[r.id].openPopup(); }, 900);
   }, 100);
 }
 
-// ── Volunteer actions ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// AFTER PHOTO MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function openAfterModal(id) {
+  pendingAfterReportId = id;
+  pendingAfterImg = null;
+  resetAfterUpload();
+
+  // Show before image preview if available
+  var r = reports.find(function(x) { return x.id === id; });
+  var preview = document.getElementById('after-before-preview');
+  if (r && r.image) {
+    preview.innerHTML =
+      '<div class="fg" style="margin-bottom:4px">' +
+        '<div class="flabel">' + t('beforeLabel') + '</div>' +
+        '<img src="' + r.image + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">' +
+      '</div>';
+  } else {
+    preview.innerHTML = '';
+  }
+
+  map.closePopup();
+  document.getElementById('after-overlay').style.display = 'flex';
+}
+
+function closeAfterModal() {
+  document.getElementById('after-overlay').style.display = 'none';
+  // If report was In Progress and user closed without proof, set to pending_proof
+  if (pendingAfterReportId) {
+    var r = reports.find(function(x) { return x.id === pendingAfterReportId; });
+    if (r && r.status === 'In Progress') {
+      r.status = 'pending_proof';
+      updateStats(); refresh();
+      showToast(t('toastPendingProof'));
+    }
+  }
+  pendingAfterReportId = null;
+  pendingAfterImg = null;
+}
+
+function bgCloseAfter(e) {
+  if (e.target === document.getElementById('after-overlay')) closeAfterModal();
+}
+
+function handleAfterFile(e) {
+  var file = e.target.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    pendingAfterImg = ev.target.result;
+    document.getElementById('after-upload-wrap').innerHTML =
+      '<div style="position:relative">' +
+      '<img src="' + pendingAfterImg + '" class="preview-img" alt="After Preview">' +
+      '<button onclick="clearAfterImage()" style="position:absolute;top:7px;right:7px;background:rgba(255,255,255,0.88);border:1px solid #E5E3DC;border-radius:6px;width:26px;height:26px;font-size:13px;cursor:pointer">✕</button>' +
+      '</div>';
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetAfterUpload() {
+  document.getElementById('after-upload-wrap').innerHTML =
+    '<div class="upload-box">' +
+    '<input type="file" id="after-file-in" accept="image/*" onchange="handleAfterFile(event)" />' +
+    '<div class="upload-icon-big">📷</div>' +
+    '<div class="upload-hint">' + t('uploadHint') + '</div>' +
+    '</div>';
+}
+
+function clearAfterImage() { pendingAfterImg = null; resetAfterUpload(); }
+
+function submitAfterPhoto() {
+  if (!pendingAfterImg) { showToast(t('toastNoPhoto')); return; }
+  var id = pendingAfterReportId;
+  var r = reports.find(function(x) { return x.id === id; });
+  if (!r) return;
+
+  var prevSeverity = r.severity;
+  r.afterImage = pendingAfterImg;
+  r.status = 'Cleaned';
+
+  document.getElementById('after-overlay').style.display = 'none';
+  pendingAfterReportId = null;
+  pendingAfterImg = null;
+
+  addToLeaderboard(prevSeverity); // handles toast for points
+  updateStats(); refresh();
+  showToast(t('toastCleaned'));
+  setTimeout(function() {
+    markerMap[id] && markerMap[id].openPopup();
+  }, 400);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VOLUNTEER ACTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
 function claimCleanup(id) {
-  const r = reports.find(x => x.id === id);
+  var r = reports.find(function(x) { return x.id === id; });
   if (!r) return;
   r.status = 'In Progress';
   map.closePopup();
   updateStats(); refresh();
-  showToast('🔧 Cleanup claimed! You\'re making a difference.');
-  setTimeout(function() { markerMap[id]?.openPopup(); }, 300);
+  showToast(t('toastClaim'));
+  setTimeout(function() { markerMap[id] && markerMap[id].openPopup(); }, 300);
 }
 
+// markCleaned now opens after-photo modal
 function markCleaned(id) {
-  const r = reports.find(x => x.id === id);
-  if (!r) return;
-  r.status = 'Cleaned';
-  map.closePopup();
-  updateStats(); refresh();
-  showToast('✅ Marked as cleaned! Great work.');
-  setTimeout(function() { markerMap[id]?.openPopup(); }, 300);
+  openAfterModal(id);
 }
 
-// ── Tab ───────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB SWITCHER
+// ═══════════════════════════════════════════════════════════════════════════════
 function switchTab(el, tab) {
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
   el.classList.add('active');
-  var mapWrap  = document.querySelector('.map-wrap');
-  var sidebar  = document.querySelector('.sidebar');
+  var mapWrap = document.querySelector('.map-wrap');
+  var sidebar = document.querySelector('.sidebar');
   if (tab === 'list') {
     mapWrap.style.display  = 'none';
     sidebar.style.width    = '100%';
@@ -601,40 +870,44 @@ function switchTab(el, tab) {
   }
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════════════════════
 var _toastTimer;
 function showToast(msg) {
-  var t = document.getElementById('kiyora-toast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'kiyora-toast';
-    t.className = 'toast';
-    document.body.appendChild(t);
+  var toast = document.getElementById('kiyora-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'kiyora-toast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
   }
-  t.textContent = msg;
-  t.style.display = 'flex';
-  t.style.animation = 'none';
-  void t.offsetWidth;
-  t.style.animation = '';
+  toast.textContent = msg;
+  toast.style.display = 'flex';
+  toast.style.animation = 'none';
+  void toast.offsetWidth;
+  toast.style.animation = '';
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(function() { t.style.display = 'none'; }, 3000);
+  _toastTimer = setTimeout(function() { toast.style.display = 'none'; }, 3200);
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
   initMap();
   updateStats();
   renderList();
+  renderLeaderboard();
+  applyLang(); // apply saved language preference
 });
 
-// ── Unregister any leftover service workers ───────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(function(regs) {
     regs.forEach(function(r) { r.unregister(); });
   });
 }
 </script>
-
 
 </body>
 </html>

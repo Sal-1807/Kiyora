@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, Image, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -7,10 +7,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { registerRootComponent } from 'expo';
 
-import { COLORS, SEED_REPORTS } from './src/data';
+import { COLORS, SEED_REPORTS, SEED_LEADERBOARD, SEV_POINTS } from './src/data';
+import { LangProvider, useLang } from './src/LangContext';
 import MapScreen from './src/MapScreen';
 import ListScreen from './src/ListScreen';
+import LeaderboardScreen from './src/LeaderboardScreen';
 import ReportModal from './src/ReportModal';
+import AfterPhotoModal from './src/AfterPhotoModal';
 import { Toast, useToast } from './src/Toast';
 
 const Tab = createBottomTabNavigator();
@@ -29,8 +32,9 @@ const kt = StyleSheet.create({
   name: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, letterSpacing: -0.3 },
 });
 
+// ── Tab icon ──────────────────────────────────────────────────────────────────
 function TabIcon({ label, focused }) {
-  const map = { Map: '🗺️', Reports: '📋' };
+  const map = { Map: '🗺️', Reports: '📋', Leaderboard: '🏆' };
   return (
     <View style={ti.wrap}>
       <Text style={ti.icon}>{map[label]}</Text>
@@ -45,18 +49,31 @@ const ti = StyleSheet.create({
   labelActive: { color: COLORS.green, fontWeight: '700' },
 });
 
-function App() {
-  const [reports, setReports]       = useState(SEED_REPORTS);
-  const [modalVisible, setModal]    = useState(false);
-  const [selected, setSelected]     = useState(null);   // existing report
-  const [prefillCoords, setPrefill] = useState(null);   // from map tap
+// ── Inner app (inside LangProvider so useLang works) ─────────────────────────
+function AppInner() {
+  const { lang, t, toggleLang } = useLang();
 
-  const mapRef  = useRef(null);   // ref to MapScreen (exposes flyTo)
+  const [reports, setReports]       = useState(SEED_REPORTS);
+  const [leaderboard, setLeaderboard] = useState(SEED_LEADERBOARD);
+  const [modalVisible, setModal]    = useState(false);
+  const [selected, setSelected]     = useState(null);
+  const [prefillCoords, setPrefill] = useState(null);
+
+  // After-photo modal
+  const [afterVisible, setAfterVisible]   = useState(false);
+  const [cleaningReport, setCleaningReport] = useState(null);
+
+  const myStats = useRef({ cleanups: 0, score: 0 });
+  const mapRef  = useRef(null);
   const navRef  = useNavigationContainerRef();
   const { message: toastMsg, opacity: toastOpacity, showToast } = useToast();
 
-  // Open detail sheet OR new-report form
-  // coords is set when user tapped the map
+  const stats = {
+    high:    reports.filter(r => r.severity === 'high' && r.status !== 'Cleaned').length,
+    cleaned: reports.filter(r => r.status === 'Cleaned').length,
+  };
+
+  // ── Modal open/close ──────────────────────────────────────────────────────
   const openReport = useCallback((report, coords = null) => {
     setSelected(report);
     setPrefill(coords);
@@ -69,38 +86,93 @@ function App() {
     setPrefill(null);
   }, []);
 
+  // ── Submit new report ─────────────────────────────────────────────────────
   const handleSubmit = useCallback(data => {
     setReports(prev => [{
       id: `r${Date.now()}`,
       status: 'Reported',
+      afterImage: null,
       timestamp: new Date(),
       ...data,
     }, ...prev]);
-    showToast('📍 Report submitted! Thank you.');
-  }, [showToast]);
+    showToast(t('reportSubmitted'));
+  }, [showToast, t]);
 
+  // ── Claim cleanup ─────────────────────────────────────────────────────────
+  const handleClaim = useCallback(id => {
+    setReports(prev => prev.map(r =>
+      r.id === id ? { ...r, status: 'In Progress' } : r,
+    ));
+    showToast(t('claimToast'));
+  }, [showToast, t]);
+
+  // ── Start clean → open after-photo modal ──────────────────────────────────
+  const handleStartClean = useCallback(reportId => {
+    const report = reports.find(r => r.id === reportId);
+    if (!report) return;
+    setModal(false);
+    setSelected(null);
+    setPrefill(null);
+    setCleaningReport(report);
+    setAfterVisible(true);
+  }, [reports]);
+
+  // ── After modal closed without photo → pending_proof ─────────────────────
+  const handleAfterClose = useCallback(() => {
+    if (cleaningReport) {
+      setReports(prev => prev.map(r =>
+        r.id === cleaningReport.id && r.status === 'In Progress'
+          ? { ...r, status: 'pending_proof' }
+          : r,
+      ));
+      showToast(t('pendingProofToast'));
+    }
+    setAfterVisible(false);
+    setCleaningReport(null);
+  }, [cleaningReport, showToast, t]);
+
+  // ── Complete clean: photo submitted ──────────────────────────────────────
+  const handleCompleteClean = useCallback((id, afterImage) => {
+    const report = reports.find(r => r.id === id);
+    const severity = report?.severity || 'low';
+    const pts = SEV_POINTS[severity];
+
+    setReports(prev => prev.map(r =>
+      r.id === id ? { ...r, status: 'Cleaned', afterImage } : r,
+    ));
+
+    myStats.current.cleanups += 1;
+    myStats.current.score    += pts;
+    const { cleanups, score } = myStats.current;
+
+    setLeaderboard(prev => {
+      const next = prev.map(e => ({ ...e }));
+      const idx  = next.findIndex(e => e.isMe);
+      if (idx >= 0) {
+        next[idx] = { ...next[idx], name: t('you'), cleanups, score };
+      } else {
+        next.push({ id: 'me', name: t('you'), cleanups, score, isMe: true });
+      }
+      return next.sort((a, b) => b.score - a.score);
+    });
+
+    setAfterVisible(false);
+    setCleaningReport(null);
+    showToast(t('cleanedToast'));
+    setTimeout(() => showToast(t('pointsToast', { pts })), 1200);
+  }, [reports, showToast, t]);
+
+  // ── handleAction for backward compat (claim from ReportModal) ────────────
   const handleAction = useCallback((id, action) => {
-    setReports(prev => prev.map(r => {
-      if (r.id !== id) return r;
-      return { ...r, status: action === 'claim' ? 'In Progress' : 'Cleaned' };
-    }));
-    showToast(action === 'claim'
-      ? '🔧 Cleanup claimed! You\'re making a difference.'
-      : '✅ Marked as cleaned! Great work.');
-  }, [showToast]);
+    if (action === 'claim') handleClaim(id);
+    if (action === 'clean') handleStartClean(id);
+  }, [handleClaim, handleStartClean]);
 
-  // Called from ListScreen "View" button — switch to Map tab + fly to report
+  // ── Fly to report on map ──────────────────────────────────────────────────
   const handleFlyTo = useCallback(r => {
     navRef.current?.navigate('Map');
-    setTimeout(() => {
-      mapRef.current?.flyTo(r);
-    }, 300);
+    setTimeout(() => mapRef.current?.flyTo(r), 300);
   }, [navRef]);
-
-  const stats = {
-    high:    reports.filter(r => r.severity === 'high' && r.status !== 'Cleaned').length,
-    cleaned: reports.filter(r => r.status === 'Cleaned').length,
-  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -117,6 +189,10 @@ function App() {
               headerTitleStyle: { fontSize: 17, fontWeight: '700', color: COLORS.textPrimary },
               headerRight: () => (
                 <View style={hs.row}>
+                  {/* Language toggle */}
+                  <TouchableOpacity style={hs.langBtn} onPress={toggleLang}>
+                    <Text style={hs.langTxt}>{lang === 'en' ? 'हिं' : 'EN'}</Text>
+                  </TouchableOpacity>
                   {stats.high > 0 && (
                     <View style={[hs.badge, { backgroundColor: COLORS.redBg }]}>
                       <Text style={[hs.badgeTxt, { color: COLORS.red }]}>{stats.high} High</Text>
@@ -130,7 +206,7 @@ function App() {
               tabBarStyle: {
                 backgroundColor: COLORS.surface,
                 borderTopColor: COLORS.border,
-                height: Platform.OS === 'ios' ? 80 : 60,
+                height: Platform.OS === 'ios' ? 80 : 62,
                 paddingBottom: Platform.OS === 'ios' ? 20 : 8,
                 paddingTop: 8,
                 elevation: 0, shadowOpacity: 0,
@@ -148,13 +224,21 @@ function App() {
                 />
               )}
             </Tab.Screen>
+
             <Tab.Screen name="Reports" options={{ title: 'Reports' }}>
               {() => (
                 <ListScreen
                   reports={reports}
+                  leaderboard={leaderboard}
                   onOpenReport={openReport}
                   onFlyTo={handleFlyTo}
                 />
+              )}
+            </Tab.Screen>
+
+            <Tab.Screen name="Leaderboard" options={{ title: 'Leaderboard' }}>
+              {() => (
+                <LeaderboardScreen leaderboard={leaderboard} />
               )}
             </Tab.Screen>
           </Tab.Navigator>
@@ -167,6 +251,14 @@ function App() {
           onClose={closeModal}
           onSubmit={handleSubmit}
           onAction={handleAction}
+          onStartClean={handleStartClean}
+        />
+
+        <AfterPhotoModal
+          visible={afterVisible}
+          report={cleaningReport}
+          onClose={handleAfterClose}
+          onSubmit={handleCompleteClean}
         />
 
         <Toast message={toastMsg} opacity={toastOpacity} />
@@ -175,10 +267,25 @@ function App() {
   );
 }
 
+// ── Root: wrap with LangProvider ─────────────────────────────────────────────
+function App() {
+  return (
+    <LangProvider>
+      <AppInner />
+    </LangProvider>
+  );
+}
+
 const hs = StyleSheet.create({
-  row:      { flexDirection: 'row', gap: 6, paddingRight: 14 },
-  badge:    { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  row:     { flexDirection: 'row', gap: 6, paddingRight: 14, alignItems: 'center' },
+  badge:   { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   badgeTxt: { fontSize: 11, fontWeight: '600' },
+  langBtn: {
+    paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: COLORS.surface2,
+    borderRadius: 8, borderWidth: 1, borderColor: COLORS.border,
+  },
+  langTxt: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
 });
 
 registerRootComponent(App);

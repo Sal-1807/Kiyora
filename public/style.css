@@ -425,3 +425,111 @@ header {
   .main { flex-direction: column-reverse; }
   .map-wrap { flex: 1; }
 }
+
+/* ── LANGUAGE TOGGLE ── */
+.lang-toggle {
+  padding: 6px 13px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all .18s;
+  letter-spacing: 0.3px;
+}
+.lang-toggle:hover { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+/* ── LEADERBOARD ── */
+.lb-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  transition: box-shadow .15s;
+}
+.lb-row:hover { box-shadow: var(--shadow-sm); }
+.lb-row.lb-me {
+  border-color: var(--green);
+  background: var(--green-bg);
+}
+.lb-rank { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+.rank-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 50%; font-size: 11px; font-weight: 700; color: var(--text-muted);
+}
+.lb-name {
+  flex: 1;
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 5px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.lb-you-tag {
+  display: inline-block;
+  padding: 1px 7px; border-radius: 10px;
+  background: var(--green); color: white;
+  font-size: 10px; font-weight: 700;
+  flex-shrink: 0;
+}
+.lb-stats { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.lb-cleanups {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: var(--surface2); padding: 2px 8px; border-radius: 10px;
+}
+.lb-score {
+  font-size: 13px; font-weight: 700; color: var(--green);
+  min-width: 52px; text-align: right;
+}
+
+/* ── BEFORE / AFTER ── */
+.pu-ba {
+  display: flex; gap: 6px; align-items: stretch;
+  margin-bottom: 10px;
+}
+.pu-ba-side {
+  flex: 1; position: relative; overflow: hidden;
+  border-radius: 8px; border: 1px solid var(--border);
+}
+.pu-ba-side img {
+  width: 100%; height: 90px; object-fit: cover; display: block;
+}
+.pu-ba-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.52);
+  color: white; font-size: 10px; font-weight: 700;
+  text-align: center; padding: 3px 0;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.pu-ba-arrow {
+  display: flex; align-items: center;
+  font-size: 16px; color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Sidebar card before/after badge */
+.ba-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 10px;
+  background: var(--blue-bg); color: var(--blue);
+  font-size: 10px; font-weight: 700;
+  margin-top: 3px;
+}
+
+/* ── PENDING PROOF STATUS DOT ── */
+.sdot.pend { background: #9333EA; animation: blink 1.5s infinite; }
+
+/* pending_proof chip in status filter */
+.chip.c-pend.active { background: #9333EA; border-color: #9333EA; }
+
+/* ── POINTS FLASH animation ── */
+@keyframes pts-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.lb-score.flash { animation: pts-pop .35s ease; }

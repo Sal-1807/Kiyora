@@ -225,7 +225,7 @@ function AppInner() {
               )}
             </Tab.Screen>
 
-            <Tab.Screen name="Reports" options={{ title: 'Reports' }}>
+            <Tab.Screen name="Reports" options={{ headerTitle: () => <KiyoraTitle /> }}>
               {() => (
                 <ListScreen
                   reports={reports}
@@ -236,7 +236,7 @@ function AppInner() {
               )}
             </Tab.Screen>
 
-            <Tab.Screen name="Leaderboard" options={{ title: 'Leaderboard' }}>
+            <Tab.Screen name="Leaderboard" options={{ headerTitle: () => <KiyoraTitle /> }}>
               {() => (
                 <LeaderboardScreen leaderboard={leaderboard} />
               )}

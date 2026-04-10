@@ -2,3 +2,5 @@ node_modules
 .claude
 .claude_cache
 .claude_cache_*
+
+.readme.md

@@ -134,6 +134,7 @@ Seven pre-loaded reports across Indian cities:
 | Park Street, Kolkata | High | Reported |
 
 ---
+<<<<<<< HEAD
 
 ## Deployment
 
@@ -164,3 +165,5 @@ npx expo build:android   # or expo build:ios
 ## License
 
 MIT
+=======
+>>>>>>> 594fd6dee70fbabdc5ca4737aac875cfdec308df

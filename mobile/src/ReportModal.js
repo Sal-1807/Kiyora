@@ -8,7 +8,8 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SEV_COLOR, SEV_BG, SEV_LABEL, STATUS_CFG } from './data';
 
-export default function ReportModal({ visible, report, onClose, onSubmit, onAction }) {
+// prefillCoords: { lat, lng } passed when user tapped the map
+export default function ReportModal({ visible, report, prefillCoords, onClose, onSubmit, onAction }) {
   const isNew = !report;
 
   // New-report form state
@@ -23,10 +24,25 @@ export default function ReportModal({ visible, report, onClose, onSubmit, onActi
   useEffect(() => {
     if (visible && isNew) {
       setDesc(''); setSeverity('medium'); setImage(null);
-      setCoords(null); setAddress('');
-      grabLocation();
+      if (prefillCoords) {
+        // Came from map tap — use those coords, reverse geocode them
+        setCoords(prefillCoords);
+        reverseGeocode(prefillCoords.lat, prefillCoords.lng);
+      } else {
+        setCoords(null); setAddress('');
+        grabLocation();
+      }
     }
   }, [visible]);
+
+  async function reverseGeocode(lat, lng) {
+    setLocating(true);
+    try {
+      const [place] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+      if (place) setAddress([place.street, place.district, place.city].filter(Boolean).join(', '));
+    } catch { /* ignore */ }
+    finally { setLocating(false); }
+  }
 
   async function grabLocation() {
     setLocating(true);
@@ -35,10 +51,7 @@ export default function ReportModal({ visible, report, onClose, onSubmit, onActi
       if (status !== 'granted') return;
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
-      const [place] = await Location.reverseGeocodeAsync({
-        latitude: loc.coords.latitude, longitude: loc.coords.longitude,
-      });
-      if (place) setAddress([place.street, place.district, place.city].filter(Boolean).join(', '));
+      await reverseGeocode(loc.coords.latitude, loc.coords.longitude);
     } catch { /* silently ignore */ }
     finally { setLocating(false); }
   }
@@ -62,13 +75,14 @@ export default function ReportModal({ visible, report, onClose, onSubmit, onActi
 
   function handleSubmit() {
     if (!desc.trim()) { Alert.alert('Missing info', 'Please describe the garbage spot.'); return; }
+    if (!address.trim() && !coords) { Alert.alert('Missing info', 'Please add a location — type an address or use GPS.'); return; }
     setSaving(true);
     setTimeout(() => {
       onSubmit({
         description: desc.trim(), severity, image,
-        lat: coords?.lat ?? 20.5937 + (Math.random() - 0.5) * 2,
-        lng: coords?.lng ?? 78.9629 + (Math.random() - 0.5) * 2,
-        address: address || 'Unknown location',
+        lat: coords?.lat ?? 20.5937 + (Math.random() - 0.5) * 4,
+        lng: coords?.lng ?? 78.9629 + (Math.random() - 0.5) * 4,
+        address: address.trim() || 'Unknown location',
       });
       setSaving(false);
       onClose();
@@ -150,14 +164,39 @@ export default function ReportModal({ visible, report, onClose, onSubmit, onActi
 
             {/* Location */}
             <Text style={s.label}>Location</Text>
-            <View style={s.locBox}>
-              {locating
-                ? <ActivityIndicator size="small" color={COLORS.green} style={{ marginRight: 8 }} />
-                : <Text style={{ fontSize: 15, marginRight: 8 }}>📍</Text>}
-              <Text style={s.locTxt} numberOfLines={1}>
-                {locating ? 'Getting location…' : address || 'Location unavailable'}
-              </Text>
+
+            {/* Editable address field */}
+            <View style={s.locInputRow}>
+              <Text style={s.locPin}>📍</Text>
+              <TextInput
+                style={s.locInput}
+                placeholder="Type an address or use GPS below…"
+                placeholderTextColor={COLORS.textMuted}
+                value={locating ? '' : address}
+                onChangeText={txt => { setAddress(txt); setCoords(null); }}
+                returnKeyType="done"
+                editable={!locating}
+              />
+              {locating && (
+                <ActivityIndicator size="small" color={COLORS.green} style={{ marginLeft: 8 }} />
+              )}
             </View>
+
+            {/* GPS + map-tap buttons */}
+            <View style={s.locBtns}>
+              <TouchableOpacity style={s.locBtn} onPress={grabLocation} activeOpacity={0.7}>
+                <Text style={s.locBtnTxt}>📡  Use GPS</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.locBtn} onPress={() => { onClose(); }} activeOpacity={0.7}>
+                <Text style={s.locBtnTxt}>🗺  Tap on Map</Text>
+              </TouchableOpacity>
+            </View>
+
+            {coords && (
+              <Text style={s.coordsTxt}>
+                {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+              </Text>
+            )}
 
             {/* Severity */}
             <Text style={s.label}>Severity</Text>
@@ -272,12 +311,29 @@ const s = StyleSheet.create({
     marginBottom: 8, marginTop: 16,
   },
 
-  locBox: {
+  locInputRow: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: COLORS.surface, borderRadius: 10,
-    padding: 12, borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 12, paddingVertical: 4,
+    borderWidth: 1, borderColor: COLORS.border,
   },
-  locTxt: { flex: 1, fontSize: 13, color: COLORS.textSecondary },
+  locPin: { fontSize: 15, marginRight: 8 },
+  locInput: {
+    flex: 1, fontSize: 13, color: COLORS.textPrimary,
+    paddingVertical: 10,
+  },
+  locBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  locBtn: {
+    flex: 1, paddingVertical: 10,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 10, alignItems: 'center',
+  },
+  locBtnTxt: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
+  coordsTxt: {
+    fontSize: 11, color: COLORS.textMuted,
+    marginTop: 5, marginLeft: 4,
+  },
 
   sevRow: { flexDirection: 'row', gap: 10 },
   sevOpt: {

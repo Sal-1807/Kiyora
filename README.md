@@ -134,3 +134,16 @@ Seven pre-loaded reports across Indian cities:
 | Park Street, Kolkata | High | Reported |
 
 ---
+
+## APIs & External Services
+
+| Service | Used by | Key required? |
+|---|---|---|
+| OpenStreetMap tiles | Web map (Leaflet) | No |
+| Google Fonts (DM Sans, DM Serif Display) | Web app | No |
+| Browser Geolocation API | Web — GPS location | No |
+| Google Maps SDK (Android) | Mobile map tiles | Yes — add to `app.json` |
+| Expo Location (device GPS) | Mobile — pin location | No (permission prompt) |
+| Expo ImagePicker (camera/gallery) | Mobile — photo attach | No (permission prompt) |
+
+---

@@ -580,9 +580,25 @@ function markCleaned(id) {
 }
 
 // ── Tab ───────────────────────────────────────────────────────────────────────
-function switchTab(el) {
+function switchTab(el, tab) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+  var mapWrap  = document.querySelector('.map-wrap');
+  var sidebar  = document.querySelector('.sidebar');
+  if (tab === 'list') {
+    mapWrap.style.display  = 'none';
+    sidebar.style.width    = '100%';
+    sidebar.style.minWidth = 'unset';
+    sidebar.style.maxWidth = 'unset';
+    sidebar.style.borderRight = 'none';
+  } else {
+    mapWrap.style.display  = '';
+    sidebar.style.width    = '';
+    sidebar.style.minWidth = '';
+    sidebar.style.maxWidth = '';
+    sidebar.style.borderRight = '';
+    setTimeout(function() { map.invalidateSize(); }, 50);
+  }
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────

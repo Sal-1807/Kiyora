@@ -111,24 +111,3 @@ Seven pre-loaded reports across Indian cities so the map is populated on first l
 | Park Street, Kolkata | High | Reported |
 
 ---
-
-## Deployment
-
-```bash
-# Build for production
-npm run build
-# Output → dist/
-```
-
-| Platform | Steps |
-|---|---|
-| **Netlify** | Drag the `dist/` folder onto [app.netlify.com/drop](https://app.netlify.com/drop) |
-| **Vercel** | `npx vercel` from the project root |
-| **GitHub Pages** | Push `dist/` contents to the `gh-pages` branch |
-| **Any static host** | Upload the contents of `dist/` — no server needed |
-
----
-
-## License
-
-MIT

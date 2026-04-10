@@ -1,19 +1,616 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kiyora – Smart Garbage Reporting</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <script type="module" crossorigin src="/assets/index-AomcVW2G.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-TTkNIEOI.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kiyora – Smart Garbage Reporting</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" crossorigin href="/assets/index-CSYzBEES.css">
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌿</div>
+    <div class="logo-text">Ki<span>yora</span></div>
+  </div>
+  <div class="header-right">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab(this,'map')">🗺 Map</button>
+      <button class="nav-tab" onclick="switchTab(this,'list')">📋 Reports</button>
+    </div>
+    <button class="btn-report" onclick="openModal()">＋ Report Spot</button>
+  </div>
+</header>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-inner">
+
+      <!-- Stats -->
+      <div>
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="sec-title">📊 Dashboard</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card s-total">
+            <div class="stat-label">Total Reports</div>
+            <div class="stat-value" id="s-total">0</div>
+          </div>
+          <div class="stat-card s-prog">
+            <div class="stat-label">In Progress</div>
+            <div class="stat-value" id="s-prog">0</div>
+          </div>
+          <div class="stat-card s-clean">
+            <div class="stat-label">Cleaned ✓</div>
+            <div class="stat-value" id="s-clean">0</div>
+          </div>
+          <div class="stat-card s-high">
+            <div class="stat-label">High Severity</div>
+            <div class="stat-value" id="s-high">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Filters -->
+      <div>
+        <div class="sec-head" style="margin-bottom:8px">
+          <span class="sec-title">🔍 Filter</span>
+        </div>
+        <div class="chip-row" id="flt-sev" style="margin-bottom:8px">
+          <div class="chip active" data-v="all"    onclick="setSevFilter(this)">All</div>
+          <div class="chip c-low"  data-v="low"    onclick="setSevFilter(this)">🟢 Low</div>
+          <div class="chip c-med"  data-v="medium" onclick="setSevFilter(this)">🟠 Medium</div>
+          <div class="chip c-high" data-v="high"   onclick="setSevFilter(this)">🔴 High</div>
+        </div>
+        <div class="chip-row" id="flt-stat">
+          <div class="chip active" data-v="all"         onclick="setStatFilter(this)">All Status</div>
+          <div class="chip"        data-v="Reported"    onclick="setStatFilter(this)">Reported</div>
+          <div class="chip"        data-v="In Progress" onclick="setStatFilter(this)">In Progress</div>
+          <div class="chip"        data-v="Cleaned"     onclick="setStatFilter(this)">Cleaned</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Report list -->
+      <div>
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="sec-title">📍 Spots</span>
+          <span id="count-label" style="font-size:12px;color:var(--text-muted)">0 spots</span>
+        </div>
+        <div id="report-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="legend-title">Garbage Spots</div>
+      <div class="legend-row">
+        <span class="leg-tag low">● Low</span>
+        <span class="leg-tag medium">● Medium</span>
+        <span class="leg-tag high">● High</span>
+      </div>
+    </div>
+    <div class="map-hint" id="map-hint">Click anywhere on the map to drop a report pin 📍</div>
+  </div>
+
+</div>
+
+<!-- ══ REPORT MODAL ══ -->
+<div class="overlay" id="overlay" style="display:none" onclick="bgClose(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title">🗑 Report a Garbage Spot</div>
+        <div class="modal-sub">Location set via map click or GPS — no manual input</div>
+      </div>
+      <button class="btn-x" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Location -->
+      <div class="fg">
+        <div class="flabel">📍 Location</div>
+        <div class="loc-box" id="loc-display">No location set yet</div>
+        <div class="loc-btns">
+          <button class="btn-loc" onclick="useGPS()">📡 Use My GPS</button>
+          <button class="btn-loc" onclick="switchToMapClick()">🗺 Click on Map</button>
+        </div>
+      </div>
+
+      <!-- Severity -->
+      <div class="fg">
+        <div class="flabel">⚠️ Severity Level</div>
+        <div class="sev-opts">
+          <div class="sev-opt low"    onclick="pickSev('low',this)">
+            <div style="font-size:10px;margin-bottom:4px">🟢</div>Low
+          </div>
+          <div class="sev-opt medium pick" onclick="pickSev('medium',this)">
+            <div style="font-size:10px;margin-bottom:4px">🟠</div>Medium
+          </div>
+          <div class="sev-opt high"   onclick="pickSev('high',this)">
+            <div style="font-size:10px;margin-bottom:4px">🔴</div>High
+          </div>
+        </div>
+      </div>
+
+      <!-- Image upload -->
+      <div class="fg">
+        <div class="flabel">📸 Photo <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+        <div id="upload-wrap">
+          <div class="upload-box">
+            <input type="file" id="file-in" accept="image/*" onchange="handleFile(event)" />
+            <div class="upload-icon-big">📷</div>
+            <div class="upload-hint">Click to upload a photo</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-green" onclick="submitReport()">📤 Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ── Seed data ─────────────────────────────────────────────────────────────────
+const SEED_REPORTS = [
+  {
+    id: 'r1', lat: 14.6042, lng: 120.9822,
+    severity: 'high', status: 'Reported',
+    description: 'Large pile of mixed household and construction waste blocking the drainage canal. Strong odour affecting nearby homes.',
+    image: 'https://picsum.photos/seed/garbage01/400/260',
+    timestamp: new Date('2025-04-01T08:30:00'),
+    address: 'Tondo, Manila'
+  },
+  {
+    id: 'r2', lat: 14.6760, lng: 121.0437,
+    severity: 'medium', status: 'In Progress',
+    description: 'Scattered plastic bags and bottles along the roadside near the elementary school.',
+    image: 'https://picsum.photos/seed/garbage02/400/260',
+    timestamp: new Date('2025-04-02T14:20:00'),
+    address: 'Quezon City, Metro Manila'
+  },
+  {
+    id: 'r3', lat: 14.5547, lng: 121.0175,
+    severity: 'low', status: 'Cleaned',
+    description: 'Small accumulation of food packaging near the park entrance.',
+    image: null,
+    timestamp: new Date('2025-04-03T10:15:00'),
+    address: 'Makati City'
+  },
+  {
+    id: 'r4', lat: 13.7563, lng: 100.5018,
+    severity: 'high', status: 'Reported',
+    description: 'Illegal dumping of construction debris beside the canal. Growing pile blocks pedestrian access.',
+    image: 'https://picsum.photos/seed/garbage04/400/260',
+    timestamp: new Date('2025-04-04T16:45:00'),
+    address: 'Bangkok, Thailand'
+  },
+  {
+    id: 'r5', lat: -6.2088, lng: 106.8456,
+    severity: 'medium', status: 'Reported',
+    description: 'Overflowing public trash bins near the market. Collection missed for several days.',
+    image: null,
+    timestamp: new Date('2025-04-05T09:00:00'),
+    address: 'Central Jakarta, Indonesia'
+  },
+  {
+    id: 'r6', lat: 3.1390, lng: 101.6869,
+    severity: 'low', status: 'In Progress',
+    description: 'Discarded electronics and batteries left beside a residential dumpster.',
+    image: 'https://picsum.photos/seed/garbage06/400/260',
+    timestamp: new Date('2025-04-06T11:30:00'),
+    address: 'Kuala Lumpur, Malaysia'
+  },
+  {
+    id: 'r7', lat: 10.7769, lng: 106.7009,
+    severity: 'high', status: 'Reported',
+    description: 'Burning waste pile in an open lot, generating toxic smoke. Immediate attention required.',
+    image: 'https://picsum.photos/seed/garbage07/400/260',
+    timestamp: new Date('2025-04-07T07:15:00'),
+    address: 'Ho Chi Minh City, Vietnam'
+  }
+];
+
+// ── App state ─────────────────────────────────────────────────────────────────
+let reports = [...SEED_REPORTS];
+let sevFilter  = 'all';
+let statFilter = 'all';
+let pendingLat = null, pendingLng = null;
+let pendingSev = 'medium';
+let pendingImg = null;
+let selectedId = null;
+
+// ── Map setup ─────────────────────────────────────────────────────────────────
+const SEV_COLOR  = { low: '#2D8A4E', medium: '#C8630A', high: '#C0392B' };
+const SEV_RADIUS = { low: 9, medium: 11, high: 13 };
+
+let map;
+let markerMap = {}; // id → L.CircleMarker
+
+function initMap() {
+  map = L.map('map').setView([8.0, 108.0], 4);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+  }).addTo(map);
+
+  // Map click → open modal with that location pre-filled
+  map.on('click', function(e) {
+    pendingLat = e.latlng.lat;
+    pendingLng = e.latlng.lng;
+    // Hide the hint after first map interaction
+    const hint = document.getElementById('map-hint');
+    if (hint) { hint.style.opacity = '0'; setTimeout(() => hint.remove(), 500); }
+    openModal();
+  });
+
+  renderMarkers();
+}
+
+// ── Markers ───────────────────────────────────────────────────────────────────
+function renderMarkers() {
+  // Remove all existing markers
+  Object.values(markerMap).forEach(m => map.removeLayer(m));
+  markerMap = {};
+
+  getFiltered().forEach(r => {
+    const m = L.circleMarker([r.lat, r.lng], {
+      radius:      SEV_RADIUS[r.severity],
+      fillColor:   SEV_COLOR[r.severity],
+      color:       'white',
+      weight:      2.5,
+      fillOpacity: r.status === 'Cleaned' ? 0.4 : 0.88
+    });
+
+    m.bindTooltip(
+      `<b style="font-family:'DM Sans',sans-serif;font-size:12px">${r.address}</b>`,
+      { direction: 'top', offset: [0, -8] }
+    );
+
+    m.bindPopup(buildPopup(r), { maxWidth: 280 });
+
+    m.on('click', () => {
+      // Highlight matching sidebar card
+      document.querySelectorAll('.report-card').forEach(c => c.classList.remove('sel'));
+      const card = document.getElementById('card-' + r.id);
+      if (card) {
+        card.classList.add('sel');
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+
+    m.addTo(map);
+    markerMap[r.id] = m;
+  });
+}
+
+function buildPopup(r) {
+  const sevBg    = { low: '#EBF7EF', medium: '#FEF3E8', high: '#FDECEA' };
+  const sevColor = { low: '#2D8A4E', medium: '#C8630A', high: '#C0392B' };
+  const sevLabel = r.severity.charAt(0).toUpperCase() + r.severity.slice(1);
+  const ts = new Date(r.timestamp).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+
+  const imgEl = r.image
+    ? `<img class="pu-img" src="${r.image}" alt="Spot photo" loading="lazy">`
+    : `<div class="pu-ph">🗑️</div>`;
+
+  let actionBtn;
+  if (r.status === 'Reported')
+    actionBtn = `<button class="pu-btn claim"   onclick="claimCleanup('${r.id}')">🙋 Claim for Cleanup</button>`;
+  else if (r.status === 'In Progress')
+    actionBtn = `<button class="pu-btn cleaned" onclick="markCleaned('${r.id}')">✅ Mark as Cleaned</button>`;
+  else
+    actionBtn = `<div class="pu-btn done">✓ This spot is cleaned</div>`;
+
+  return `
+    ${imgEl}
+    <div class="pu-body">
+      <div class="pu-loc">📍 ${r.address}</div>
+      <div class="pu-row">
+        <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${sevBg[r.severity]};color:${sevColor[r.severity]}">${sevLabel} Severity</span>
+        <span class="pu-stat">${r.status}</span>
+      </div>
+      ${r.description ? `<p style="font-size:12px;color:#6B6963;line-height:1.55;margin-bottom:10px">${r.description}</p>` : ''}
+      <p style="font-size:11px;color:#A09C95;margin-bottom:10px">${ts}</p>
+      ${actionBtn}
+    </div>`;
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+function getFiltered() {
+  return reports.filter(r => {
+    if (sevFilter  !== 'all' && r.severity !== sevFilter)  return false;
+    if (statFilter !== 'all' && r.status   !== statFilter) return false;
+    return true;
+  });
+}
+
+function setSevFilter(el) {
+  document.querySelectorAll('#flt-sev .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  sevFilter = el.dataset.v;
+  refresh();
+}
+
+function setStatFilter(el) {
+  document.querySelectorAll('#flt-stat .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  statFilter = el.dataset.v;
+  refresh();
+}
+
+function refresh() {
+  renderMarkers();
+  renderList();
+}
+
+// ── Sidebar list ──────────────────────────────────────────────────────────────
+function renderList() {
+  const filtered = getFiltered();
+  document.getElementById('count-label').textContent =
+    `${filtered.length} spot${filtered.length !== 1 ? 's' : ''}`;
+
+  const el = document.getElementById('report-list');
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-st"><div class="ei">🔍</div><div class="et">No spots match the current filters</div></div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(r => {
+    const dot = r.status === 'In Progress' ? 'prog' : r.status === 'Cleaned' ? 'cln' : 'rep';
+    const ts  = new Date(r.timestamp).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    const sevLabel = r.severity.charAt(0).toUpperCase() + r.severity.slice(1);
+    const imgEl = r.image
+      ? `<img src="${r.image}" class="card-thumb" alt="" loading="lazy">`
+      : `<div class="card-thumb-ph">🗑️</div>`;
+
+    return `
+      <div class="report-card sev-${r.severity}" id="card-${r.id}" onclick="flyTo('${r.id}')" style="margin-bottom:8px">
+        <div class="card-top">
+          <div class="card-loc">${r.address}</div>
+          <div class="sev-badge ${r.severity}">● ${sevLabel}</div>
+        </div>
+        <div class="card-bottom">
+          ${imgEl}
+          <div class="card-info">
+            <div class="card-status-row"><span class="sdot ${dot}"></span>${r.status}</div>
+            <div class="card-time">${ts}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function flyTo(id) {
+  const r = reports.find(x => x.id === id);
+  if (!r) return;
+  map.flyTo([r.lat, r.lng], 15, { duration: 0.8 });
+  // Highlight card
+  document.querySelectorAll('.report-card').forEach(c => c.classList.remove('sel'));
+  document.getElementById('card-' + id)?.classList.add('sel');
+  // Open popup after flight
+  setTimeout(() => {
+    const m = markerMap[id];
+    if (m) { m.openPopup(); }
+  }, 900);
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('s-total').textContent = reports.length;
+  document.getElementById('s-prog').textContent  = reports.filter(r => r.status === 'In Progress').length;
+  document.getElementById('s-clean').textContent = reports.filter(r => r.status === 'Cleaned').length;
+  document.getElementById('s-high').textContent  = reports.filter(r => r.severity === 'high').length;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal() {
+  updateLocDisplay();
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('overlay').style.display = 'none';
+  pendingImg = null;
+  resetUpload();
+}
+
+function bgClose(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+function switchToMapClick() {
+  closeModal();
+  showToast('🗺 Click anywhere on the map to drop a pin');
+}
+
+function updateLocDisplay() {
+  const box = document.getElementById('loc-display');
+  if (pendingLat !== null) {
+    box.textContent = `📍 ${pendingLat.toFixed(5)}, ${pendingLng.toFixed(5)}`;
+    box.classList.add('set');
+  } else {
+    box.textContent = 'No location set — use GPS or click the map';
+    box.classList.remove('set');
+  }
+}
+
+// ── GPS ───────────────────────────────────────────────────────────────────────
+function useGPS() {
+  if (!navigator.geolocation) { showToast('❌ Geolocation not supported'); return; }
+  showToast('📡 Getting your location…');
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      pendingLat = coords.latitude;
+      pendingLng = coords.longitude;
+      updateLocDisplay();
+      showToast('✅ Location captured from GPS');
+    },
+    () => showToast('❌ Could not get location. Try clicking the map instead.'),
+    { timeout: 10000 }
+  );
+}
+
+// ── Severity picker ───────────────────────────────────────────────────────────
+function pickSev(val, el) {
+  document.querySelectorAll('.sev-opt').forEach(o => o.classList.remove('pick'));
+  el.classList.add('pick');
+  pendingSev = val;
+}
+
+// ── Image upload ──────────────────────────────────────────────────────────────
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    pendingImg = ev.target.result;
+    document.getElementById('upload-wrap').innerHTML = `
+      <div style="position:relative">
+        <img src="${pendingImg}" class="preview-img" alt="Preview">
+        <button onclick="clearImage()" style="position:absolute;top:7px;right:7px;background:rgba(255,255,255,0.88);border:1px solid #E5E3DC;border-radius:6px;width:26px;height:26px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetUpload() {
+  document.getElementById('upload-wrap').innerHTML = `
+    <div class="upload-box">
+      <input type="file" id="file-in" accept="image/*" onchange="handleFile(event)" />
+      <div class="upload-icon-big">📷</div>
+      <div class="upload-hint">Click to upload a photo</div>
+    </div>`;
+}
+
+function clearImage() {
+  pendingImg = null;
+  resetUpload();
+}
+
+// ── Submit ────────────────────────────────────────────────────────────────────
+function submitReport() {
+  if (pendingLat === null) {
+    showToast('❌ Please set a location first');
+    return;
+  }
+  const newReport = {
+    id:          'r' + Date.now(),
+    lat:         pendingLat,
+    lng:         pendingLng,
+    severity:    pendingSev,
+    status:      'Reported',
+    description: '',
+    image:       pendingImg,
+    timestamp:   new Date(),
+    address:     `${pendingLat.toFixed(4)}°, ${pendingLng.toFixed(4)}°`
+  };
+
+  reports.unshift(newReport);
+  pendingLat = pendingLng = null;
+  pendingImg = null;
+
+  closeModal();
+  updateStats();
+  refresh();
+  showToast('📍 Report submitted! Thank you.');
+
+  // Fly to the new marker and open its popup
+  setTimeout(() => {
+    map.flyTo([newReport.lat, newReport.lng], 14, { duration: 0.8 });
+    setTimeout(() => markerMap[newReport.id]?.openPopup(), 900);
+  }, 100);
+}
+
+// ── Volunteer actions ─────────────────────────────────────────────────────────
+function claimCleanup(id) {
+  const r = reports.find(x => x.id === id);
+  if (!r) return;
+  r.status = 'In Progress';
+  map.closePopup();
+  updateStats();
+  refresh();
+  showToast('🔧 Cleanup claimed! You\'re making a difference.');
+  // Re-open updated popup
+  setTimeout(() => markerMap[id]?.openPopup(), 300);
+}
+
+function markCleaned(id) {
+  const r = reports.find(x => x.id === id);
+  if (!r) return;
+  r.status = 'Cleaned';
+  map.closePopup();
+  updateStats();
+  refresh();
+  showToast('✅ Marked as cleaned! Great work.');
+  setTimeout(() => markerMap[id]?.openPopup(), 300);
+}
+
+// ── Tab switch (Map / Reports) ────────────────────────────────────────────────
+function switchTab(el, tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  // Both views share the same layout; tab state is cosmetic for now
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let _toastTimer;
+function showToast(msg) {
+  let t = document.getElementById('kiyora-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'kiyora-toast';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = 'flex';
+  // Restart animation
+  t.style.animation = 'none';
+  void t.offsetWidth;
+  t.style.animation = '';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  updateStats();
+  renderList();
+});
+</script>
+
+</body>
 </html>

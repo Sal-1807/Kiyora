@@ -8,12 +8,15 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SEV_COLOR, SEV_BG, SEV_LABEL, STATUS_CFG, STATUS_LABEL_KEY } from './data';
 import { useLang } from './LangContext';
+import { useAuth } from './AuthContext';
 
 export default function ReportModal({
   visible, report, prefillCoords,
   onClose, onSubmit, onAction, onStartClean,
 }) {
   const { t } = useLang();
+  const { user } = useAuth();
+  const isVolunteer = user?.role === 'volunteer';
   const isNew = !report;
 
   const [desc, setDesc]         = useState('');
@@ -153,8 +156,8 @@ export default function ReportModal({
             ) : null}
           </ScrollView>
 
-          {/* Action buttons */}
-          {report.status !== 'Cleaned' && (
+          {/* Action buttons — volunteers only */}
+          {report.status !== 'Cleaned' && isVolunteer && (
             <View style={s.detailActions}>
               {report.status === 'Reported' && (
                 <TouchableOpacity

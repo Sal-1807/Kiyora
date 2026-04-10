@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -9,6 +9,8 @@ import { registerRootComponent } from 'expo';
 
 import { COLORS, SEED_REPORTS, SEED_LEADERBOARD, SEV_POINTS } from './src/data';
 import { LangProvider, useLang } from './src/LangContext';
+import { AuthProvider, useAuth } from './src/AuthContext';
+import AuthScreen from './src/AuthScreen';
 import MapScreen from './src/MapScreen';
 import ListScreen from './src/ListScreen';
 import LeaderboardScreen from './src/LeaderboardScreen';
@@ -49,18 +51,26 @@ const ti = StyleSheet.create({
   labelActive: { color: COLORS.green, fontWeight: '700' },
 });
 
-// ── Inner app (inside LangProvider so useLang works) ─────────────────────────
+// ── Gate: show AuthScreen until logged in ─────────────────────────────────────
+function RootGate() {
+  const { user } = useAuth();
+  if (!user) return <AuthScreen />;
+  return <AppInner />;
+}
+
+// ── Inner app (needs LangProvider + AuthProvider in scope) ────────────────────
 function AppInner() {
   const { lang, t, toggleLang } = useLang();
+  const { user, logout }        = useAuth();
 
-  const [reports, setReports]       = useState(SEED_REPORTS);
+  const [reports, setReports]         = useState(SEED_REPORTS);
   const [leaderboard, setLeaderboard] = useState(SEED_LEADERBOARD);
-  const [modalVisible, setModal]    = useState(false);
-  const [selected, setSelected]     = useState(null);
-  const [prefillCoords, setPrefill] = useState(null);
+  const [modalVisible, setModal]      = useState(false);
+  const [selected, setSelected]       = useState(null);
+  const [prefillCoords, setPrefill]   = useState(null);
 
   // After-photo modal
-  const [afterVisible, setAfterVisible]   = useState(false);
+  const [afterVisible, setAfterVisible]     = useState(false);
   const [cleaningReport, setCleaningReport] = useState(null);
 
   const myStats = useRef({ cleanups: 0, score: 0 });
@@ -68,17 +78,27 @@ function AppInner() {
   const navRef  = useNavigationContainerRef();
   const { message: toastMsg, opacity: toastOpacity, showToast } = useToast();
 
-  const stats = {
-    high:    reports.filter(r => r.severity === 'high' && r.status !== 'Cleaned').length,
-    cleaned: reports.filter(r => r.status === 'Cleaned').length,
-  };
+  // ── Seed volunteer into leaderboard on login ──────────────────────────────
+  useEffect(() => {
+    if (user?.role === 'volunteer') {
+      myStats.current = { cleanups: 0, score: 0 };
+      setLeaderboard(prev => {
+        const base = prev.filter(e => !e.isMe);
+        return [...base, { id: 'me', name: user.name, cleanups: 0, score: 0, isMe: true }]
+          .sort((a, b) => b.score - a.score);
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount (AppInner mounts fresh each login)
 
   // ── Modal open/close ──────────────────────────────────────────────────────
+  // Citizens open new-report modal; volunteers open detail modal for existing reports only
   const openReport = useCallback((report, coords = null) => {
+    if (!report && user?.role !== 'citizen') return; // only citizens can file new reports
     setSelected(report);
     setPrefill(coords);
     setModal(true);
-  }, []);
+  }, [user]);
 
   const closeModal = useCallback(() => {
     setModal(false);
@@ -133,9 +153,9 @@ function AppInner() {
 
   // ── Complete clean: photo submitted ──────────────────────────────────────
   const handleCompleteClean = useCallback((id, afterImage) => {
-    const report = reports.find(r => r.id === id);
+    const report   = reports.find(r => r.id === id);
     const severity = report?.severity || 'low';
-    const pts = SEV_POINTS[severity];
+    const pts      = SEV_POINTS[severity];
 
     setReports(prev => prev.map(r =>
       r.id === id ? { ...r, status: 'Cleaned', afterImage } : r,
@@ -149,9 +169,9 @@ function AppInner() {
       const next = prev.map(e => ({ ...e }));
       const idx  = next.findIndex(e => e.isMe);
       if (idx >= 0) {
-        next[idx] = { ...next[idx], name: t('you'), cleanups, score };
+        next[idx] = { ...next[idx], name: user.name, cleanups, score };
       } else {
-        next.push({ id: 'me', name: t('you'), cleanups, score, isMe: true });
+        next.push({ id: 'me', name: user.name, cleanups, score, isMe: true });
       }
       return next.sort((a, b) => b.score - a.score);
     });
@@ -160,7 +180,7 @@ function AppInner() {
     setCleaningReport(null);
     showToast(t('cleanedToast'));
     setTimeout(() => showToast(t('pointsToast', { pts })), 1200);
-  }, [reports, showToast, t]);
+  }, [reports, user, showToast, t]);
 
   // ── handleAction for backward compat (claim from ReportModal) ────────────
   const handleAction = useCallback((id, action) => {
@@ -193,14 +213,23 @@ function AppInner() {
                   <TouchableOpacity style={hs.langBtn} onPress={toggleLang}>
                     <Text style={hs.langTxt}>{lang === 'en' ? 'हिं' : 'EN'}</Text>
                   </TouchableOpacity>
-                  {stats.high > 0 && (
-                    <View style={[hs.badge, { backgroundColor: COLORS.redBg }]}>
-                      <Text style={[hs.badgeTxt, { color: COLORS.red }]}>{stats.high} High</Text>
-                    </View>
-                  )}
-                  <View style={[hs.badge, { backgroundColor: COLORS.greenBg }]}>
-                    <Text style={[hs.badgeTxt, { color: COLORS.green }]}>{stats.cleaned} Cleaned</Text>
+
+                  {/* User chip (role + first name) */}
+                  <View style={[hs.userChip, {
+                    backgroundColor: user.role === 'volunteer' ? COLORS.greenBg : COLORS.blueBg,
+                    borderColor:     user.role === 'volunteer' ? COLORS.green    : COLORS.blue,
+                  }]}>
+                    <Text style={[hs.userChipTxt, {
+                      color: user.role === 'volunteer' ? COLORS.green : COLORS.blue,
+                    }]}>
+                      {user.role === 'volunteer' ? '♻️' : '👤'} {user.name.split(' ')[0]}
+                    </Text>
                   </View>
+
+                  {/* Logout */}
+                  <TouchableOpacity style={hs.logoutBtn} onPress={logout}>
+                    <Text style={hs.logoutTxt}>↩</Text>
+                  </TouchableOpacity>
                 </View>
               ),
               tabBarStyle: {
@@ -267,25 +296,36 @@ function AppInner() {
   );
 }
 
-// ── Root: wrap with LangProvider ─────────────────────────────────────────────
+// ── Root: wrap with AuthProvider + LangProvider ───────────────────────────────
 function App() {
   return (
-    <LangProvider>
-      <AppInner />
-    </LangProvider>
+    <AuthProvider>
+      <LangProvider>
+        <RootGate />
+      </LangProvider>
+    </AuthProvider>
   );
 }
 
 const hs = StyleSheet.create({
-  row:     { flexDirection: 'row', gap: 6, paddingRight: 14, alignItems: 'center' },
-  badge:   { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  badgeTxt: { fontSize: 11, fontWeight: '600' },
-  langBtn: {
+  row:      { flexDirection: 'row', gap: 6, paddingRight: 14, alignItems: 'center' },
+  langBtn:  {
     paddingHorizontal: 10, paddingVertical: 5,
     backgroundColor: COLORS.surface2,
     borderRadius: 8, borderWidth: 1, borderColor: COLORS.border,
   },
-  langTxt: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
+  langTxt:  { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
+  userChip: {
+    paddingHorizontal: 9, paddingVertical: 4,
+    borderRadius: 20, borderWidth: 1,
+  },
+  userChipTxt: { fontSize: 11, fontWeight: '700' },
+  logoutBtn: {
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  logoutTxt: { fontSize: 14, color: COLORS.textSecondary },
 });
 
 registerRootComponent(App);

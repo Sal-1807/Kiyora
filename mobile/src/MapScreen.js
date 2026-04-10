@@ -7,6 +7,7 @@ import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { COLORS, SEV_COLOR, SEV_BG, SEV_LABEL, STATUS_CFG, STATUS_LABEL_KEY, timeAgo } from './data';
 import { useLang } from './LangContext';
+import { useAuth } from './AuthContext';
 
 const INDIA = {
   latitude: 20.5937, longitude: 78.9629,
@@ -15,6 +16,8 @@ const INDIA = {
 
 const MapScreen = forwardRef(function MapScreen({ reports, onOpenReport }, ref) {
   const { t } = useLang();
+  const { user } = useAuth();
+  const isCitizen = user?.role === 'citizen';
   const mapRef  = useRef(null);
   const [locating, setLocating]   = useState(false);
   const [hintGone, setHintGone]   = useState(false);
@@ -43,6 +46,7 @@ const MapScreen = forwardRef(function MapScreen({ reports, onOpenReport }, ref) 
   }
 
   function handleMapPress(e) {
+    if (!isCitizen) return; // only citizens can file new reports
     const { latitude, longitude } = e.nativeEvent.coordinate;
     setHintGone(true);
     onOpenReport(null, { lat: latitude, lng: longitude });
@@ -115,8 +119,8 @@ const MapScreen = forwardRef(function MapScreen({ reports, onOpenReport }, ref) 
         ))}
       </MapView>
 
-      {/* Map hint */}
-      {!hintGone && (
+      {/* Map hint — only shown to citizens who can tap to report */}
+      {!hintGone && isCitizen && (
         <TouchableOpacity style={s.hint} onPress={() => setHintGone(true)} activeOpacity={0.8}>
           <Text style={s.hintTxt}>{t('mapHint')}</Text>
         </TouchableOpacity>
@@ -144,11 +148,13 @@ const MapScreen = forwardRef(function MapScreen({ reports, onOpenReport }, ref) 
           : <Text style={s.locIcon}>◎</Text>}
       </TouchableOpacity>
 
-      {/* FAB */}
-      <TouchableOpacity style={s.fab} onPress={() => onOpenReport(null)} activeOpacity={0.85}>
-        <Text style={s.fabPlus}>＋</Text>
-        <Text style={s.fabLabel}>{t('reportBtn')}</Text>
-      </TouchableOpacity>
+      {/* FAB — only citizens can report new spots */}
+      {isCitizen && (
+        <TouchableOpacity style={s.fab} onPress={() => onOpenReport(null)} activeOpacity={0.85}>
+          <Text style={s.fabPlus}>＋</Text>
+          <Text style={s.fabLabel}>{t('reportBtn')}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 });

@@ -19,6 +19,87 @@
 </head>
 <body>
 
+<!-- ══ AUTH PAGE ══ -->
+<div id="auth-page">
+
+  <!-- Left panel -->
+  <div class="auth-left">
+    <div class="auth-left-brand">
+      <div class="auth-left-logo">
+        <div class="auth-left-icon">🌿</div>
+        <div class="auth-left-name">Kiyora</div>
+      </div>
+      <p class="auth-left-tagline">Smart Garbage Reporting for cleaner, healthier communities.</p>
+    </div>
+
+    <div class="auth-features">
+      <div class="auth-feat"><div class="auth-feat-icon">📍</div>Report garbage spots on the map</div>
+      <div class="auth-feat"><div class="auth-feat-icon">♻️</div>Volunteer to clean them up</div>
+      <div class="auth-feat"><div class="auth-feat-icon">🏆</div>Earn points and top the leaderboard</div>
+      <div class="auth-feat"><div class="auth-feat-icon">📸</div>Upload before &amp; after proof photos</div>
+    </div>
+
+    <div class="auth-stat-row">
+      <div class="auth-stat"><div class="auth-stat-val">7</div><div class="auth-stat-lbl">Active Reports</div></div>
+      <div class="auth-stat"><div class="auth-stat-val">4</div><div class="auth-stat-lbl">Volunteers</div></div>
+      <div class="auth-stat"><div class="auth-stat-val">1</div><div class="auth-stat-lbl">Cleaned ✓</div></div>
+    </div>
+  </div>
+
+  <!-- Right panel (form) -->
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-greeting" id="auth-greeting">Welcome back 👋</div>
+      <div class="auth-sub-text" id="auth-sub">Sign in to continue making a difference.</div>
+
+      <!-- Role selector -->
+      <div class="auth-role-row">
+        <button class="auth-role-btn active" id="role-btn-citizen" onclick="selectRole('citizen')">
+          <span class="auth-role-icon">👤</span>
+          <span class="auth-role-name">Citizen</span>
+          <span class="auth-role-desc">Report spots</span>
+        </button>
+        <button class="auth-role-btn" id="role-btn-volunteer" onclick="selectRole('volunteer')">
+          <span class="auth-role-icon">♻️</span>
+          <span class="auth-role-name">Volunteer</span>
+          <span class="auth-role-desc">Clean &amp; earn points</span>
+        </button>
+      </div>
+
+      <!-- Login / Sign Up tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="auth-tab-login" onclick="switchAuthMode('login')">Log In</button>
+        <button class="auth-tab-btn" id="auth-tab-signup" onclick="switchAuthMode('signup')">Sign Up</button>
+      </div>
+
+      <!-- Fields -->
+      <div id="auth-name-wrap" class="auth-fg" style="display:none">
+        <label class="auth-label">Full Name</label>
+        <input class="auth-input" id="auth-name" type="text" placeholder="Your full name" />
+      </div>
+      <div class="auth-fg">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="auth-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="auth-fg">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="auth-password" type="password" placeholder="••••••••"
+               onkeydown="if(event.key==='Enter')handleAuth()" />
+      </div>
+
+      <div class="auth-error" id="auth-error"></div>
+      <button class="auth-submit" id="auth-submit-btn" onclick="handleAuth()">Log In</button>
+
+      <div class="auth-switch" id="auth-switch">
+        Don't have an account? <a href="#" onclick="switchAuthMode('signup');return false;">Sign up free</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP (hidden until logged in) ══ -->
+<div id="main-app" style="display:none;flex-direction:column;height:100vh">
+
 <!-- ══ HEADER ══ -->
 <header>
   <div class="logo">
@@ -31,7 +112,13 @@
       <button class="nav-tab" onclick="switchTab(this,'list')" data-i18n="navReports">📋 Reports</button>
     </div>
     <button class="lang-toggle" id="lang-btn" onclick="toggleLang()">हिं</button>
-    <button class="btn-report" onclick="openModal()" data-i18n="btnReport">＋ Report Spot</button>
+    <div class="user-chip" id="user-chip" style="display:none">
+      <div class="user-avatar" id="user-avatar-el"></div>
+      <span class="user-chip-name" id="user-chip-name"></span>
+      <span class="user-role-badge" id="user-role-badge"></span>
+    </div>
+    <button class="btn-logout" id="btn-logout" style="display:none" onclick="logout()">Log out</button>
+    <button class="btn-report" id="btn-report-spot" onclick="openModal()" data-i18n="btnReport">＋ Report Spot</button>
   </div>
 </header>
 
@@ -223,6 +310,8 @@
   </div>
 </div>
 
+</div><!-- /main-app -->
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -349,16 +438,18 @@ var leaderboard = [
 var myCleanups = 0, myScore = 0;
 
 function addToLeaderboard(severity) {
-  var pts = SEV_POINTS[severity] || 10;
+  var pts    = SEV_POINTS[severity] || 10;
   myCleanups += 1;
   myScore    += pts;
-  var idx = leaderboard.findIndex(function(e) { return e.isMe; });
+  var user   = getCurrentUser();
+  var myName = (user && user.name) ? user.name : 'Volunteer';
+  var idx    = leaderboard.findIndex(function(e) { return e.isMe; });
   if (idx >= 0) {
     leaderboard[idx].cleanups = myCleanups;
     leaderboard[idx].score    = myScore;
-    leaderboard[idx].name     = t('youLabel');
+    leaderboard[idx].name     = myName;
   } else {
-    leaderboard.push({ name: t('youLabel'), cleanups: myCleanups, score: myScore, isMe: true });
+    leaderboard.push({ name: myName, cleanups: myCleanups, score: myScore, isMe: true });
   }
   leaderboard.sort(function(a, b) { return b.score - a.score; });
   renderLeaderboard();
@@ -369,18 +460,17 @@ function renderLeaderboard() {
   var el = document.getElementById('leaderboard-list');
   if (!el) return;
   var medals = ['🥇','🥈','🥉'];
-  // If "You" entry exists, update name for current language
-  leaderboard.forEach(function(e) {
-    if (e.isMe) e.name = t('youLabel');
-  });
   el.innerHTML = leaderboard.slice(0, 5).map(function(entry, i) {
     var medal = medals[i]
       ? medals[i]
       : '<span class="rank-num">' + (i + 1) + '</span>';
-    var youTag = entry.isMe
-      ? ' <span class="lb-you-tag">' + t('youLabel') + '</span>'
+    // Show "You" tag only for volunteers (citizens don't participate in cleanup)
+    var currentUser = getCurrentUser();
+    var isVolunteer = currentUser && currentUser.role === 'volunteer';
+    var youTag = (entry.isMe && isVolunteer)
+      ? ' <span class="lb-you-tag">You</span>'
       : '';
-    return '<div class="lb-row' + (entry.isMe ? ' lb-me' : '') + '">' +
+    return '<div class="lb-row' + ((entry.isMe && isVolunteer) ? ' lb-me' : '') + '">' +
       '<div class="lb-rank">' + medal + '</div>' +
       '<div class="lb-name">' + entry.name + youTag + '</div>' +
       '<div class="lb-stats">' +
@@ -474,6 +564,8 @@ function initMap() {
   }).addTo(map);
 
   map.on('click', function(e) {
+    var u = getCurrentUser();
+    if (!u || u.role !== 'citizen') return; // only citizens can report
     pendingLat = e.latlng.lat;
     pendingLng = e.latlng.lng;
     var hint = document.getElementById('map-hint');
@@ -528,16 +620,23 @@ function buildPopup(r) {
     mediaEl = '<div class="pu-ph" style="font-size:52px;background:' + cfg.iconBg + '">' + cfg.icon + '</div>';
   }
 
-  // Action button
+  // Action button — volunteers can claim/clean, citizens can only view
+  var currentUser = getCurrentUser();
+  var isVolunteer = currentUser && currentUser.role === 'volunteer';
   var btn;
-  if (r.status === 'Reported')
-    btn = '<button class="pu-btn claim" onclick="claimCleanup(\'' + r.id + '\')">' + t('claimBtn') + '</button>';
-  else if (r.status === 'In Progress')
-    btn = '<button class="pu-btn cleaned" onclick="openAfterModal(\'' + r.id + '\')">' + t('cleanedBtn') + '</button>';
-  else if (r.status === 'pending_proof')
-    btn = '<button class="pu-btn claim" onclick="openAfterModal(\'' + r.id + '\')">' + t('pendingProofBtn') + '</button>';
-  else
+  if (r.status === 'Cleaned') {
     btn = '<div class="pu-btn done">' + t('cleanedDone') + '</div>';
+  } else if (!isVolunteer) {
+    btn = ''; // citizens see no action buttons
+  } else if (r.status === 'Reported') {
+    btn = '<button class="pu-btn claim" onclick="claimCleanup(\'' + r.id + '\')">' + t('claimBtn') + '</button>';
+  } else if (r.status === 'In Progress') {
+    btn = '<button class="pu-btn cleaned" onclick="openAfterModal(\'' + r.id + '\')">' + t('cleanedBtn') + '</button>';
+  } else if (r.status === 'pending_proof') {
+    btn = '<button class="pu-btn claim" onclick="openAfterModal(\'' + r.id + '\')">' + t('pendingProofBtn') + '</button>';
+  } else {
+    btn = '';
+  }
 
   return mediaEl +
     '<div class="pu-body">' +
@@ -647,6 +746,11 @@ function updateStats() {
 // REPORT MODAL
 // ═══════════════════════════════════════════════════════════════════════════════
 function openModal() {
+  var u = getCurrentUser();
+  if (!u || u.role !== 'citizen') {
+    showToast('👤 Only citizens can report spots.');
+    return;
+  }
   updateLocDisplay();
   document.getElementById('overlay').style.display = 'flex';
 }
@@ -905,17 +1009,160 @@ function showToast(msg) {
 // BOOT
 // ═══════════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
-  initMap();
-  updateStats();
-  renderList();
-  renderLeaderboard();
-  applyLang(); // apply saved language preference
+  checkAuth();
 });
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(function(regs) {
     regs.forEach(function(r) { r.unregister(); });
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════════════════════
+var USERS_KEY   = 'kiyora-users';
+var SESSION_KEY = 'kiyora-session';
+var authMode    = 'login';   // 'login' | 'signup'
+var authRole    = 'citizen'; // 'citizen' | 'volunteer'
+
+function getUsers()            { return JSON.parse(localStorage.getItem(USERS_KEY)   || '[]'); }
+function saveUsers(u)          { localStorage.setItem(USERS_KEY,   JSON.stringify(u)); }
+function getCurrentUser()      { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+function saveCurrentUser(u)    { localStorage.setItem(SESSION_KEY, JSON.stringify(u)); }
+function clearCurrentUser()    { localStorage.removeItem(SESSION_KEY); }
+
+function selectRole(role) {
+  authRole = role;
+  document.getElementById('role-btn-citizen').classList.toggle('active',   role === 'citizen');
+  document.getElementById('role-btn-volunteer').classList.toggle('active', role === 'volunteer');
+}
+
+function switchAuthMode(mode) {
+  authMode = mode;
+  var isSignup = mode === 'signup';
+  document.getElementById('auth-tab-login').classList.toggle('active',  !isSignup);
+  document.getElementById('auth-tab-signup').classList.toggle('active',  isSignup);
+  document.getElementById('auth-name-wrap').style.display = isSignup ? 'flex' : 'none';
+  document.getElementById('auth-submit-btn').textContent  = isSignup ? 'Create Account' : 'Log In';
+  document.getElementById('auth-greeting').textContent    = isSignup ? 'Create an account 🌱' : 'Welcome back 👋';
+  document.getElementById('auth-sub').textContent         = isSignup
+    ? 'Join Kiyora and start making a difference.'
+    : 'Sign in to continue making a difference.';
+  document.getElementById('auth-switch').innerHTML = isSignup
+    ? 'Already have an account? <a href="#" onclick="switchAuthMode(\'login\');return false;">Log in</a>'
+    : 'Don\'t have an account? <a href="#" onclick="switchAuthMode(\'signup\');return false;">Sign up free</a>';
+  document.getElementById('auth-error').textContent = '';
+}
+
+function handleAuth() {
+  var email    = (document.getElementById('auth-email').value    || '').trim().toLowerCase();
+  var password = (document.getElementById('auth-password').value || '').trim();
+  var name     = (document.getElementById('auth-name').value     || '').trim();
+  var errEl    = document.getElementById('auth-error');
+  errEl.textContent = '';
+
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = 'Enter a valid email address.'; return; }
+  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+  var users = getUsers();
+
+  if (authMode === 'signup') {
+    if (!name) { errEl.textContent = 'Please enter your full name.'; return; }
+    if (users.find(function(u) { return u.email === email; })) {
+      errEl.textContent = 'An account with this email already exists.'; return;
+    }
+    var newUser = { id: 'u' + Date.now(), name: name, email: email, password: password, role: authRole };
+    users.push(newUser);
+    saveUsers(users);
+    loginSuccess(newUser);
+  } else {
+    var found = users.find(function(u) { return u.email === email && u.password === password; });
+    if (!found) { errEl.textContent = 'Incorrect email or password.'; return; }
+    loginSuccess(found);
+  }
+}
+
+function loginSuccess(user) {
+  saveCurrentUser(user);
+  mountApp(user);
+}
+
+function logout() {
+  clearCurrentUser();
+  // Reset app state
+  document.getElementById('main-app').style.display  = 'none';
+  document.getElementById('auth-page').style.display = 'flex';
+  // Clear form
+  document.getElementById('auth-email').value    = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-name').value     = '';
+  document.getElementById('auth-error').textContent = '';
+  switchAuthMode('login');
+}
+
+function mountApp(user) {
+  document.getElementById('auth-page').style.display  = 'none';
+  document.getElementById('main-app').style.display   = 'flex';
+
+  // Show user chip in header
+  var initials = user.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().slice(0,2);
+  document.getElementById('user-avatar-el').textContent  = initials;
+  document.getElementById('user-chip-name').textContent  = user.name.split(' ')[0];
+  var badge = document.getElementById('user-role-badge');
+  badge.textContent  = user.role === 'volunteer' ? '♻️ Volunteer' : '👤 Citizen';
+  badge.className    = 'user-role-badge ' + user.role;
+  document.getElementById('user-chip').style.display   = 'flex';
+  document.getElementById('btn-logout').style.display  = 'block';
+
+  // Role-based UI: citizens report, volunteers clean
+  var reportBtn = document.getElementById('btn-report-spot');
+  var mapHintEl = document.getElementById('map-hint');
+  if (user.role === 'volunteer') {
+    if (reportBtn) reportBtn.style.display = 'none';
+    if (mapHintEl) mapHintEl.style.display = 'none'; // map click does nothing for volunteers
+  } else {
+    if (reportBtn) reportBtn.style.display = '';
+    if (mapHintEl) mapHintEl.style.display = '';
+  }
+
+  // Seed volunteer into leaderboard with full name, reset stats on new login
+  if (user.role === 'volunteer') {
+    myCleanups = 0; myScore = 0;
+    var existing = leaderboard.find(function(e) { return e.isMe; });
+    if (!existing) {
+      leaderboard.push({ name: user.name, cleanups: 0, score: 0, isMe: true });
+    } else {
+      existing.name     = user.name;
+      existing.cleanups = 0;
+      existing.score    = 0;
+    }
+    leaderboard.sort(function(a, b) { return b.score - a.score; });
+  }
+
+  // Boot map + UI only once
+  if (!map) {
+    initMap();
+    updateStats();
+    renderList();
+    renderLeaderboard();
+    applyLang();
+  } else {
+    map.invalidateSize();
+    updateStats();
+    renderList();
+    renderLeaderboard();
+    applyLang();
+  }
+}
+
+function checkAuth() {
+  var user = getCurrentUser();
+  if (user) {
+    mountApp(user);
+  }
+  // else: auth-page is already visible by default
 }
 </script>
 

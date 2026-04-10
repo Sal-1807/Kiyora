@@ -4,11 +4,14 @@ import {
 } from 'react-native';
 import { COLORS, SEV_POINTS } from './data';
 import { useLang } from './LangContext';
+import { useAuth } from './AuthContext';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function LeaderboardScreen({ leaderboard }) {
   const { t } = useLang();
+  const { user } = useAuth();
+  const isVolunteer = user?.role === 'volunteer';
 
   const stats = [
     { label: t('low') + ' cleanup',    pts: SEV_POINTS.low,    color: COLORS.green,  bg: COLORS.greenBg  },
@@ -18,8 +21,9 @@ export default function LeaderboardScreen({ leaderboard }) {
 
   function renderRow({ item, index }) {
     const medal = MEDALS[index] || null;
+    const showYou = item.isMe && isVolunteer;
     return (
-      <View style={[s.row, item.isMe && s.rowMe]}>
+      <View style={[s.row, showYou && s.rowMe]}>
         <View style={s.rankBox}>
           {medal
             ? <Text style={s.medal}>{medal}</Text>
@@ -27,7 +31,7 @@ export default function LeaderboardScreen({ leaderboard }) {
         </View>
         <View style={s.nameBox}>
           <Text style={s.name} numberOfLines={1}>{item.name}</Text>
-          {item.isMe && (
+          {showYou && (
             <View style={s.youBadge}>
               <Text style={s.youBadgeTxt}>{t('you')}</Text>
             </View>
@@ -37,7 +41,7 @@ export default function LeaderboardScreen({ leaderboard }) {
           <View style={s.cleanupPill}>
             <Text style={s.cleanupTxt}>{item.cleanups} <Text style={s.cleanupSub}>{t('cleanups')}</Text></Text>
           </View>
-          <Text style={[s.score, item.isMe && { color: COLORS.green }]}>
+          <Text style={[s.score, showYou && { color: COLORS.green }]}>
             {item.score}
             <Text style={s.scoreSub}> {t('pts')}</Text>
           </Text>

@@ -7,11 +7,14 @@ import {
   STATUS_CFG, STATUS_LABEL_KEY, timeAgo,
 } from './data';
 import { useLang } from './LangContext';
+import { useAuth } from './AuthContext';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function ListScreen({ reports, leaderboard = [], onOpenReport, onFlyTo }) {
   const { t } = useLang();
+  const { user } = useAuth();
+  const isVolunteer = user?.role === 'volunteer';
   const [active, setActive] = useState('All');
 
   const FILTERS = [
@@ -77,7 +80,7 @@ export default function ListScreen({ reports, leaderboard = [], onOpenReport, on
             </Text>
           </View>
           <View style={s.cardActions}>
-            {r.status !== 'Cleaned' && (
+            {r.status !== 'Cleaned' && isVolunteer && (
               <TouchableOpacity
                 onPress={() => onOpenReport(r)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -136,17 +139,20 @@ export default function ListScreen({ reports, leaderboard = [], onOpenReport, on
         <View style={s.lbSection}>
           <Text style={s.lbTitle}>🏆 {t('leaderboard')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.lbScroll}>
-            {leaderboard.slice(0, 5).map((entry, i) => (
-              <View key={entry.id || entry.name} style={[s.lbChip, entry.isMe && s.lbChipMe]}>
-                <Text style={s.lbMedal}>{MEDALS[i] || `${i + 1}`}</Text>
-                <Text style={[s.lbName, entry.isMe && { color: COLORS.green }]} numberOfLines={1}>
-                  {entry.isMe ? t('you') : entry.name}
-                </Text>
-                <Text style={[s.lbScore, entry.isMe && { color: COLORS.green }]}>
-                  {entry.score} <Text style={s.lbPts}>{t('pts')}</Text>
-                </Text>
-              </View>
-            ))}
+            {leaderboard.slice(0, 5).map((entry, i) => {
+              const showYou = entry.isMe && isVolunteer;
+              return (
+                <View key={entry.id || entry.name} style={[s.lbChip, showYou && s.lbChipMe]}>
+                  <Text style={s.lbMedal}>{MEDALS[i] || `${i + 1}`}</Text>
+                  <Text style={[s.lbName, showYou && { color: COLORS.green }]} numberOfLines={1}>
+                    {showYou ? t('you') : entry.name}
+                  </Text>
+                  <Text style={[s.lbScore, showYou && { color: COLORS.green }]}>
+                    {entry.score} <Text style={s.lbPts}>{t('pts')}</Text>
+                  </Text>
+                </View>
+              );
+            })}
           </ScrollView>
         </View>
       )}

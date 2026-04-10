@@ -2,13 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Kiyora – Smart Garbage Reporting</title>
+  <meta name="description" content="Report garbage dumping spots and volunteer for cleanup in your community." />
+  <meta name="theme-color" content="#2D8A4E" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+  <!-- Open Graph (for sharing) -->
+  <meta property="og:title" content="Kiyora – Smart Garbage Reporting" />
+  <meta property="og:description" content="Report garbage dumping spots and volunteer for cleanup." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/icon-512.png" />
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="/src/index.css" />
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
 
@@ -593,6 +610,15 @@ document.addEventListener('DOMContentLoaded', function() {
   updateStats();
   renderList();
 });
+
+// ── Unregister any leftover service workers ───────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); });
+  });
+}
 </script>
+
+
 </body>
 </html>

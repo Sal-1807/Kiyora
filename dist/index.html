@@ -2,13 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Kiyora – Smart Garbage Reporting</title>
+  <meta name="description" content="Report garbage dumping spots and volunteer for cleanup in your community." />
+  <meta name="theme-color" content="#2D8A4E" />
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+
+  <!-- iOS Safari PWA support -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Kiyora" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+
+  <!-- Open Graph (for sharing) -->
+  <meta property="og:title" content="Kiyora – Smart Garbage Reporting" />
+  <meta property="og:description" content="Report garbage dumping spots and volunteer for cleanup." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/icon-512.png" />
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" crossorigin href="/assets/index-CSYzBEES.css">
+
+  <!-- App styles -->
+  <link rel="stylesheet" crossorigin href="/assets/index-DmkL8k62.css">
 </head>
 <body>
 
@@ -592,7 +619,79 @@ document.addEventListener('DOMContentLoaded', function() {
   initMap();
   updateStats();
   renderList();
+  registerSW();
+  initInstallPrompt();
+
+  // Auto-open report modal if launched via shortcut
+  if (new URLSearchParams(location.search).get('action') === 'report') {
+    setTimeout(openModal, 600);
+  }
 });
+
+// ── Service Worker ────────────────────────────────────────────────────────────
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function() {});
+  }
+}
+
+// ── Install prompt (Add to Home Screen) ──────────────────────────────────────
+var _deferredInstall = null;
+
+function initInstallPrompt() {
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    _deferredInstall = e;
+    // Show the install banner after 3 seconds if not already installed
+    setTimeout(showInstallBanner, 3000);
+  });
+
+  // Hide banner if user installs from OS
+  window.addEventListener('appinstalled', function() {
+    hideInstallBanner();
+    showToast('✅ Kiyora installed on your device!');
+  });
+}
+
+function showInstallBanner() {
+  if (!_deferredInstall) return;
+  var banner = document.getElementById('install-banner');
+  if (banner) banner.style.display = 'flex';
+}
+
+function hideInstallBanner() {
+  var banner = document.getElementById('install-banner');
+  if (banner) banner.style.display = 'none';
+}
+
+function installApp() {
+  if (!_deferredInstall) return;
+  _deferredInstall.prompt();
+  _deferredInstall.userChoice.then(function(result) {
+    if (result.outcome === 'accepted') showToast('Installing Kiyora…');
+    _deferredInstall = null;
+    hideInstallBanner();
+  });
+}
 </script>
+
+<!-- ══ INSTALL BANNER ══ -->
+<div id="install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:3000;
+  background:white;border-top:1px solid #E5E3DC;padding:14px 20px 14px 16px;
+  align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.10);
+  padding-bottom:calc(14px + env(safe-area-inset-bottom))">
+  <img src="/icon-192.png" width="44" height="44" style="border-radius:10px;flex-shrink:0" alt="Kiyora icon" />
+  <div style="flex:1;min-width:0">
+    <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;color:#1A1917">Install Kiyora</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#6B6963;margin-top:1px">Add to your home screen for quick access</div>
+  </div>
+  <button onclick="installApp()" style="flex-shrink:0;padding:9px 18px;background:#2D8A4E;color:white;
+    border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+    Install
+  </button>
+  <button onclick="hideInstallBanner()" style="flex-shrink:0;background:none;border:none;
+    font-size:18px;color:#A09C95;cursor:pointer;padding:4px">✕</button>
+</div>
+
 </body>
 </html>

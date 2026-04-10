@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#2D8A4E"/>
+
+  <!-- Subtle inner glow -->
+  <rect width="512" height="512" rx="96" fill="url(#grad)" opacity="0.3"/>
+  <defs>
+    <radialGradient id="grad" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Map pin shape -->
+  <path d="M256 108
+    C200 108 155 153 155 209
+    C155 284 256 404 256 404
+    C256 404 357 284 357 209
+    C357 153 312 108 256 108Z"
+    fill="white"/>
+
+  <!-- Inner circle cutout (hole in pin) -->
+  <circle cx="256" cy="209" r="46" fill="#2D8A4E"/>
+
+  <!-- Small leaf accent inside hole -->
+  <ellipse cx="256" cy="209" rx="20" ry="28" fill="white" opacity="0.7" transform="rotate(-20 256 209)"/>
+</svg>

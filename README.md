@@ -1,25 +1,26 @@
 # Kiyora — Smart Garbage Reporting & Volunteer System
 
-A civic-tech web app that lets anyone report illegal dumping sites on a real interactive map, and enables volunteers to claim and track cleanup efforts — built for hackathons and real-world community use.
+A civic-tech platform that lets anyone report illegal dumping sites on a real interactive map and enables volunteers to claim and track cleanup efforts — available as both a web app and a mobile app (Expo Go).
 
 ---
 
 ## Features
 
-- **Report a spot** — click anywhere on the map or use GPS to pin a garbage location (no manual coordinate input)
-- **Photo upload** — drag-and-drop or file picker, stored as base64 preview
-- **Severity levels** — Low (green) · Medium (orange) · High (red) with custom colored pin markers
-- **Volunteer actions** — claim a cleanup ("In Progress") or mark it done ("Cleaned") instantly, no page reload
+- **Report a spot** — click anywhere on the map or use GPS to pin a garbage location
+- **Photo upload** — file picker or camera, stored as base64 preview
+- **Severity levels** — Low (green) · Medium (orange) · High (red) with colored pin markers
+- **Volunteer actions** — claim a cleanup ("In Progress") or mark it done ("Cleaned") instantly
 - **Live dashboard** — real-time counts for Total, In Progress, Cleaned, and High Severity
 - **Filters** — narrow visible markers by severity and/or status
-- **Report cards** — sidebar list with status icons, colored severity badges, and relative timestamps ("2h ago")
-- **Hover tooltips** — location name appears on marker hover
+- **Report cards** — list with status icons, colored severity badges, and relative timestamps
 - **Toast notifications** — feedback on every action
-- **Mobile responsive** — sidebar stacks below map on small screens
+- **Mobile app** — full Expo Go app with map, reports list, and report/volunteer flow
 
 ---
 
 ## Tech Stack
+
+### Web App
 
 | Layer | Choice |
 |---|---|
@@ -28,31 +29,45 @@ A civic-tech web app that lets anyone report illegal dumping sites on a real int
 | Map | Leaflet.js 1.9 + OpenStreetMap tiles |
 | Fonts | DM Sans + DM Serif Display (Google Fonts) |
 | Build tool | Vite 5 |
-| Data | Local in-memory state (no backend required) |
+| Data | In-memory state (no backend required) |
+
+### Mobile App
+
+| Layer | Choice |
+|---|---|
+| Framework | React Native 0.81 via Expo SDK 54 |
+| Navigation | React Navigation v7 (Bottom Tabs) |
+| Map | react-native-maps 1.20 |
+| Location | expo-location |
+| Camera / Photos | expo-image-picker |
+| State | React useState (no backend required) |
+| Runtime | Expo Go (iOS & Android) |
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-
-### Install & run
+### Web App
 
 ```bash
-# 1. Navigate to the project folder
 cd Kiyora
-
-# 2. Install dependencies
 npm install
-
-# 3. Start the dev server
 npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Mobile App
+
+```bash
+cd Kiyora/mobile
+npm install --legacy-peer-deps
+npx expo start
+```
+
+Scan the QR code with **Expo Go** on your phone (iOS or Android). Make sure your phone and PC are on the same WiFi network.
+
+> **Android note:** Add your Google Maps API key to `mobile/app.json` under `android.config.googleMaps.apiKey` before running on Android.
 
 ---
 
@@ -60,12 +75,25 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ```
 Kiyora/
-├── index.html          # Complete app — HTML structure + all JavaScript
+├── index.html              # Web app — HTML structure + all JavaScript
 ├── src/
-│   └── index.css       # All styles (CSS variables, layout, components)
-├── vite.config.js      # Minimal Vite config (no framework plugin)
+│   └── index.css           # Web styles (CSS variables, layout, components)
+├── public/
+│   └── style.css           # Static CSS served by Vite
+├── vite.config.js
 ├── package.json
-└── README.md
+│
+└── mobile/                 # Expo Go mobile app
+    ├── App.js              # Root — shared state + tab navigation
+    ├── app.json            # Expo config (permissions, icons, SDK version)
+    ├── package.json
+    ├── babel.config.js
+    ├── assets/             # App icons + splash screen
+    └── src/
+        ├── data.js         # Colors, seed data, helpers
+        ├── MapScreen.js    # Map view with markers + Report FAB
+        ├── ListScreen.js   # Filtered report list
+        └── ReportModal.js  # New report form + detail/action sheet
 ```
 
 ---
@@ -74,31 +102,26 @@ Kiyora/
 
 ### Reporting a spot
 
-1. Click **＋ Report Spot** in the header — OR — click directly on the map
-2. The modal opens with the pinned coordinates auto-filled (read-only)
-3. Optionally use **📡 Use My GPS** to capture your current location instead
-4. Set severity (Low / Medium / High), add a photo, hit **Submit Report**
-5. The marker appears on the map instantly
+1. **Web:** Click **＋ Report Spot** or click directly on the map
+2. **Mobile:** Tap the green **＋ Report Spot** button on the map
+3. Set severity (Low / Medium / High), add a description and optional photo
+4. Hit **Submit** — the marker appears instantly
 
 ### Volunteering for cleanup
 
-1. Click any pin on the map to open its popup
+1. Click/tap any pin to open its detail
 2. Click **Claim for Cleanup** → status changes to *In Progress*
-3. Return after cleanup and click **Mark as Cleaned** → marker fades to indicate completion
+3. Return after cleanup and click **Mark as Cleaned** → spot is resolved
 
 ### Filtering
 
-Use the chip buttons in the sidebar to show only markers matching a severity level or status. Filters combine — e.g. *High severity + Reported only*.
-
-### Sidebar cards
-
-Each card shows the location, abbreviated severity badge, status with animated dot, and a relative timestamp. Clicking a card flies the map to that spot and opens its popup.
+Use the filter chips to show only markers matching a severity or status. Filters combine — e.g. *High + Reported only*.
 
 ---
 
 ## Seed Data
 
-Seven pre-loaded reports across Indian cities so the map is populated on first load:
+Seven pre-loaded reports across Indian cities:
 
 | Location | Severity | Status |
 |---|---|---|
@@ -114,8 +137,9 @@ Seven pre-loaded reports across Indian cities so the map is populated on first l
 
 ## Deployment
 
+### Web
+
 ```bash
-# Build for production
 npm run build
 # Output → dist/
 ```
@@ -125,7 +149,15 @@ npm run build
 | **Netlify** | Drag the `dist/` folder onto [app.netlify.com/drop](https://app.netlify.com/drop) |
 | **Vercel** | `npx vercel` from the project root |
 | **GitHub Pages** | Push `dist/` contents to the `gh-pages` branch |
-| **Any static host** | Upload the contents of `dist/` — no server needed |
+
+### Mobile
+
+For a standalone APK/IPA (no Expo Go required):
+
+```bash
+cd mobile
+npx expo build:android   # or expo build:ios
+```
 
 ---
 

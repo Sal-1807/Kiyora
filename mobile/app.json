@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Kiyora",
+    "slug": "kiyora",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2D8A4E",
+      "dark": {
+        "backgroundColor": "#2D8A4E"
+      }
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.kiyora.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Kiyora uses your location to pin garbage spots on the map.",
+        "NSPhotoLibraryUsageDescription": "Kiyora needs photo access to attach images to reports.",
+        "NSCameraUsageDescription": "Kiyora needs camera access to photograph garbage spots."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2D8A4E"
+      },
+      "package": "com.kiyora.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "CAMERA"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
+    },
+    "plugins": [
+      ["expo-location", {
+        "locationWhenInUsePermission": "Kiyora uses your location to pin garbage spots on the map."
+      }],
+      ["expo-image-picker", {
+        "photosPermission": "Kiyora needs photo access to attach images to reports.",
+        "cameraPermission": "Kiyora needs camera access to photograph garbage spots."
+      }]
+    ]
+  }
+}

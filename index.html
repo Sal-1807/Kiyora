@@ -7,6 +7,16 @@
   <meta name="description" content="Report garbage dumping spots and volunteer for cleanup in your community." />
   <meta name="theme-color" content="#2D8A4E" />
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Kiyora" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+
+  <!-- Open Graph -->
   <meta property="og:title" content="Kiyora – Smart Garbage Reporting" />
   <meta property="og:description" content="Report garbage dumping spots and volunteer for cleanup." />
   <meta property="og:type" content="website" />
@@ -111,6 +121,7 @@
       <button class="nav-tab active" onclick="switchTab(this,'map')" data-i18n="navMap">🗺 Map</button>
       <button class="nav-tab" onclick="switchTab(this,'list')" data-i18n="navReports">📋 Reports</button>
     </div>
+    <button id="pwa-install-btn" onclick="installPWA()" style="display:none;padding:5px 12px;background:var(--green);color:white;border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;gap:5px;align-items:center">⬇ Install App</button>
     <button class="lang-toggle" id="lang-btn" onclick="toggleLang()">हिं</button>
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar-el"></div>
@@ -1012,9 +1023,32 @@ document.addEventListener('DOMContentLoaded', function() {
   checkAuth();
 });
 
+// ── PWA install prompt ────────────────────────────────────────────────────────
+var _deferredInstall = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _deferredInstall = e;
+  var btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', function() {
+  var btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'none';
+  _deferredInstall = null;
+});
+
+function installPWA() {
+  if (!_deferredInstall) return;
+  _deferredInstall.prompt();
+  _deferredInstall.userChoice.then(function() { _deferredInstall = null; });
+}
+
+// ── Service Worker ────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(r) { r.unregister(); });
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function() {});
   });
 }
 

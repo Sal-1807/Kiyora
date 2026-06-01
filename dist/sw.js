@@ -3,12 +3,12 @@
  * Strategy: Cache-first for app shell, network-first for map tiles.
  */
 
-const CACHE_NAME = 'kiyora-v1';
+const CACHE_NAME = 'kiyora-v2';
 
 // App shell — everything needed to run offline
 const SHELL = [
   '/',
-  '/src/index.css',
+  '/style.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap',
